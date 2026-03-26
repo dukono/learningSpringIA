@@ -1,15 +1,20 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Streaming](06_streaming.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Vector Store →](08_vector_store.md)**
 
 ---
 
-## 11. Embeddings — convertir texto en vectores
+# Capítulo 07 — Embeddings
+
+> Cómo convertir texto en vectores numéricos, medir similitud semántica
+> e integrar embeddings con Spring AI para búsqueda semántica.
+
+## 7. Embeddings — convertir texto en vectores
 
 Un **embedding** es la representación numérica de un texto. Permite medir la
 **similitud semántica** entre textos: dos frases con el mismo significado tendrán
 vectores similares aunque usen palabras distintas.
 
-### ¿Por qué existen los embeddings? El problema que resuelven
+### 7.1 ¿Por qué existen los embeddings? El problema que resuelven
 
 Las computadoras no entienden texto. Entienden números. Antes de los embeddings, el
 enfoque era **bag of words** (contar palabras) o búsqueda exacta de texto. El problema:
@@ -33,7 +38,7 @@ enfoque era **bag of words** (contar palabras) o búsqueda exacta de texto. El p
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Qué pasa internamente cuando generas un embedding
+### 7.2 Qué pasa internamente cuando generas un embedding
 
 Un modelo de embeddings es una **red neuronal** entrenada con millones de textos para
 que aprenda a colocar textos de significado similar cerca en un espacio de alta dimensión.
@@ -69,7 +74,7 @@ que aprenda a colocar textos de significado similar cerca en un espacio de alta 
 > La red neuronal aprendió sola cómo distribuir el significado en esas 1536 dimensiones.
 > Lo que sí es real y medible: textos similares producen vectores cercanos.
 
-### Concepto visual
+### 7.3 Concepto visual
 
 ```
 "El perro corre"     → [0.23, -0.85, 0.12, 0.67, ...] (vector de 1536 números)
@@ -79,7 +84,7 @@ que aprenda a colocar textos de significado similar cerca en un espacio de alta 
 
 La **distancia** entre vectores = similitud semántica.
 
-### Cómo se mide la similitud — Cosine Similarity
+### 7.4 Cómo se mide la similitud — Cosine Similarity
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -102,7 +107,7 @@ La **distancia** entre vectores = similitud semántica.
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Modelos de embeddings disponibles
+### 7.5 Modelos de embeddings disponibles
 
 No todos los modelos producen vectores del mismo tamaño ni calidad:
 
@@ -131,7 +136,7 @@ No todos los modelos producen vectores del mismo tamaño ni calidad:
     Mezclar modelos de distinto tamaño da resultados incorrectos.
 ```
 
-### Uso en Spring AI
+### 7.6 Uso en Spring AI
 
 ```java
 @Service
@@ -171,7 +176,7 @@ double sim = service.calcularSimilitud("perro", "can");    // ~0.92
 double sim2 = service.calcularSimilitud("perro", "pizza"); // ~0.15
 ```
 
-### Ejemplo real end-to-end: buscador semántico
+### 7.7 Ejemplo real end-to-end: buscador semántico
 
 ```java
 // Caso de uso: buscar en un FAQ por significado, no por palabras exactas
@@ -243,7 +248,7 @@ Consulta: "¿En cuánto tiempo me llega el pedido?"
 → Búsqueda por texto exacto no lo hubiera encontrado
 ```
 
-### ¿Para qué sirven los embeddings?
+### 7.8 ¿Para qué sirven los embeddings?
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -263,9 +268,55 @@ Consulta: "¿En cuánto tiempo me llega el pedido?"
 > matemáticas. Sin embeddings no existe RAG, no existe búsqueda semántica, no existe
 > ninguna de las funcionalidades avanzadas de IA en tu app. Son la base de todo.
 
+## 7.9 Errores comunes
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES CON EMBEDDINGS                                           │
+├────────────────────────────────┬─────────────────────────────────────────────┤
+│  Error                         │  Causa y solución                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Los resultados de búsqueda    │  Se están mezclando modelos de distintas    │
+│  son completamente incorrectos │  dimensiones. Si indexaste con OpenAI       │
+│  o irrelevantes                │  (1536 dims) y buscas con Ollama (768 dims),│
+│                                │  los vectores son incomparables.            │
+│                                │  ✅ Usar siempre el mismo modelo para       │
+│                                │  indexar y para buscar.                     │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Textos largos dan embeddings  │  Los modelos tienen un límite de tokens      │
+│  imprecisos o error de         │  (text-embedding-3-small: 8192 tokens).     │
+│  truncado                      │  Textos que superan ese límite se truncan   │
+│                                │  silenciosamente → el vector no captura     │
+│                                │  todo el significado.                       │
+│                                │  ✅ Dividir documentos en chunks antes de   │
+│                                │  generar embeddings (máx. 512-1000 tokens   │
+│                                │  por chunk es la práctica habitual en RAG). │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  La indexación es lenta o      │  Se llama a embeddingModel.embed() una vez  │
+│  genera muchas peticiones a    │  por documento en un bucle. Cada llamada    │
+│  la API                        │  es una petición HTTP separada.             │
+│                                │  ✅ Usar embedForResponse(List<String>)     │
+│                                │  para enviar varios textos en una sola      │
+│                                │  petición batch.                            │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Los embeddings en desarrollo  │  Se genera el embedding de cada consulta    │
+│  (Ollama) tardan mucho         │  del usuario en tiempo real. Para FAQs o    │
+│                                │  contenido estático, esto es innecesario.   │
+│                                │  ✅ Pre-generar y cachear los embeddings     │
+│                                │  de los documentos en @PostConstruct.       │
+│                                │  Solo el embedding de la consulta del       │
+│                                │  usuario debe generarse en cada petición.   │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  La similitud siempre da ~0.5  │  Se comparan embeddings generados por       │
+│  independientemente del texto  │  modelos distintos o con normalización      │
+│                                │  diferente. El cosine similarity solo tiene │
+│                                │  sentido comparando vectores del mismo       │
+│                                │  modelo con la misma normalización.         │
+│                                │  ✅ Verificar que ambos vectores vienen del  │
+│                                │  mismo EmbeddingModel bean.                 │
+└────────────────────────────────┴─────────────────────────────────────────────┘
+```
+
 ---
 
-
----
-
-> **[← Volver al índice](00_indice.md)**
+> **[← Streaming](06_streaming.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Vector Store →](08_vector_store.md)**

@@ -1,11 +1,34 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Introducción](01_introduccion.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: ChatClient →](03_chatclient.md)**
 
 ---
 
-## 5. Setup del proyecto
+# Capítulo 02 — Setup y entornos
 
-### 5.1 Dependencias (pom.xml)
+> Cómo crear el proyecto, añadir las dependencias necesarias y configurar los
+> entornos de desarrollo (Ollama local) y producción (proveedor externo).
+
+## Contenido
+
+- [2.1 Dependencias (pom.xml)](#21-dependencias-pomxml)
+- [2.2 Configuración (application.yml)](#22-configuración-applicationyml)
+- [2.3 Obtener las dependencias](#23-obtener-las-dependencias)
+- [2.4 Configuración por entornos — dev vs prod](#24-configuración-por-entornos--dev-vs-prod)
+- [2.5 Estructura de ficheros de configuración](#25-estructura-de-ficheros-de-configuración)
+- [2.6 Los ficheros de configuración](#26-los-ficheros-de-configuración)
+- [2.7 Las dependencias — el truco clave](#27-las-dependencias--el-truco-clave)
+- [2.8 Alternativa más limpia — @Profile en @Configuration](#28-alternativa-más-limpia--profile-en-configuration)
+- [2.9 Cómo activar el perfil](#29-cómo-activar-el-perfil)
+- [2.10 Ejemplo completo funcional](#210-ejemplo-completo-funcional)
+- [2.11 Flujo visual completo](#211-flujo-visual-completo)
+- [2.12 Añadir un tercer entorno — staging](#212-añadir-un-tercer-entorno--staging)
+- [2.13 Resumen visual de decisión](#213-resumen-visual-de-decisión)
+
+---
+
+## 2. Setup del proyecto
+
+### 2.1 Dependencias (pom.xml)
 
 Spring AI usa su propio BOM (Bill of Materials), igual que Spring Boot:
 
@@ -62,7 +85,7 @@ Spring AI usa su propio BOM (Bill of Materials), igual que Spring Boot:
 </dependency>
 ```
 
-### 5.2 Configuración (application.yml)
+### 2.2 Configuración (application.yml)
 
 ```yaml
 # Para OpenAI
@@ -100,7 +123,7 @@ spring:
           max-tokens: 4096
 ```
 
-### 5.3 Obtener las dependencias
+### 2.3 Obtener las dependencias
 
 Spring AI 1.0.0 está disponible en **Maven Central**, el repositorio estándar.
 No necesitas añadir repositorios adicionales.
@@ -128,7 +151,7 @@ Si usas una versión **snapshot o milestone** (versiones de desarrollo), entonce
 
 ---
 
-## 23. Configuración por entornos — dev (Ollama local) vs prod (OpenAI)
+## 2.4 Configuración por entornos — dev (Ollama local) vs prod (OpenAI)
 
 ### El problema real
 
@@ -154,7 +177,7 @@ En el mundo profesional necesitas **dos configuraciones distintas**:
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 23.1 Estructura de ficheros de configuración
+### 2.5 Estructura de ficheros de configuración
 
 La solución usa los **perfiles de Spring Boot** — exactamente igual que con bases de datos:
 
@@ -188,7 +211,7 @@ src/
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 23.2 Los ficheros de configuración
+### 2.6 Los ficheros de configuración
 
 **`application.yml`** — configuración común, sin nada de IA:
 
@@ -239,7 +262,7 @@ spring:
           max-tokens: 2000
 ```
 
-### 23.3 Las dependencias — el truco clave
+### 2.7 Las dependencias — el truco clave
 
 Aquí está el **problema**: si tienes ambos starters en el `pom.xml`, Spring Boot auto-configura
 los dos y puede haber conflictos. La solución más limpia es **incluir ambos** pero controlar
@@ -304,7 +327,7 @@ spring:
           model: gpt-4o-mini
 ```
 
-### 23.4 Alternativa más limpia — @Profile en @Configuration
+### 2.8 Alternativa más limpia — @Profile en @Configuration
 
 Si prefieres controlar todo desde Java (más explícito y testeable):
 
@@ -390,7 +413,7 @@ public class ChatService {
 }
 ```
 
-### 23.5 Cómo activar el perfil
+### 2.9 Cómo activar el perfil
 
 **Opción 1 — Variable de entorno (recomendado para CI/CD y producción):**
 
@@ -442,7 +465,7 @@ Run → Edit Configurations → Spring Boot → Active profiles: dev
 └────────────────────┴─────────────────────────────────────────────────────────┘
 ```
 
-### 23.6 Ejemplo completo funcional
+### 2.10 Ejemplo completo funcional
 
 Escenario: chatbot que usa **Ollama en dev** y **OpenAI en prod**. El código Java es
 idéntico en los dos entornos.
@@ -590,7 +613,7 @@ Started ChatbotApplication — perfil activo: [dev]
 Started ChatbotApplication — perfil activo: [prod]
 ```
 
-### 23.7 Flujo visual completo
+### 2.11 Flujo visual completo
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -629,7 +652,7 @@ Started ChatbotApplication — perfil activo: [prod]
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 23.8 Añadir un tercer entorno — staging
+### 2.12 Añadir un tercer entorno — staging
 
 En equipos grandes se suele tener también un entorno **staging** (pre-producción):
 
@@ -678,7 +701,7 @@ public class AiConfig {
 }
 ```
 
-### 23.9 Resumen visual de decisión
+### 2.13 Resumen visual de decisión
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -707,4 +730,4 @@ public class AiConfig {
 
 ---
 
-> **[← Volver al índice](00_indice.md)**
+> **[← Introducción](01_introduccion.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: ChatClient →](03_chatclient.md)**

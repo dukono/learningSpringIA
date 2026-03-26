@@ -1,14 +1,19 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Memory](11_memory.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Multimodalidad →](13_multimodalidad.md)**
 
 ---
 
-## 16. Advisors — middleware de IA
+# Capítulo 12 — Advisors
+
+> Interceptores que se ejecutan antes y después de cada llamada al modelo.
+> Equivalente a los Filter/Interceptor de Spring MVC, pero para IA.
+
+## 12. Advisors — middleware de IA
 
 Los **Advisors** son interceptores que se ejecutan antes y después de cada llamada al
 modelo. Son el equivalente a los `Filter` o `Interceptor` de Spring MVC pero para IA.
 
-### ¿Por qué existen los Advisors?
+### 12.1 ¿Por qué existen los Advisors?
 
 Sin Advisors, para añadir funcionalidades como memoria, RAG o logging tendrías que modificar
 cada llamada al modelo manualmente. Los Advisors permiten añadir esas funcionalidades de
@@ -37,7 +42,7 @@ forma **declarativa y reutilizable**, una sola vez en la configuración.
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### El patrón de cadena — cómo fluye la petición
+### 12.2 El patrón de cadena — cómo fluye la petición
 
 ```
 Petición → [Advisor 1] → [Advisor 2] → [Advisor 3] → [Modelo] → [Advisor 3] → [Advisor 2] → [Advisor 1] → Respuesta
@@ -50,7 +55,7 @@ Petición → [SimpleLoggerAdvisor] → [MessageChatMemoryAdvisor] → [Question
              DESPUÉS: loguea        DESPUÉS: guarda en memoria      DESPUÉS: (nada)
 ```
 
-### El orden de ejecución es CRÍTICO
+### 12.3 El orden de ejecución es CRÍTICO
 
 El orden en que registras los advisors importa. Un error común es ponerlos en orden incorrecto:
 
@@ -85,7 +90,7 @@ builder.defaultAdvisors(
 └────┴─────────────────────────────┴──────────────────────────────────────────┘
 ```
 
-### Advisors integrados en Spring AI
+### 12.4 Advisors integrados en Spring AI
 
 ```java
 // 1. QuestionAnswerAdvisor — hace RAG automáticamente
@@ -114,7 +119,7 @@ new SafeGuardAdvisor(List.of("hack", "explosivo", "veneno"))
 new SimpleLoggerAdvisor()
 ```
 
-### Crear tu propio Advisor
+### 12.5 Crear tu propio Advisor
 
 ```java
 @Component
@@ -160,7 +165,7 @@ public class AuditAdvisor implements CallAroundAdvisor {
 }
 ```
 
-### Pasar datos de contexto a los Advisors
+### 12.6 Pasar datos de contexto a los Advisors
 
 Puedes pasar datos desde el controller hasta los advisors usando `adviseContext`:
 
@@ -183,9 +188,55 @@ String userId  = (String) request.adviseContext().get("userId");
 String tenant  = (String) request.adviseContext().get("tenant");
 ```
 
+## 12.7 Errores comunes
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES CON ADVISORS                                             │
+├────────────────────────────────┬─────────────────────────────────────────────┤
+│  Error                         │  Causa y solución                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El SimpleLoggerAdvisor no     │  El orden de los advisors es incorrecto.    │
+│  loguea el contexto RAG ni     │  Si el logger va antes que                  │
+│  el historial de memoria        │  QuestionAnswerAdvisor y                   │
+│                                │  MessageChatMemoryAdvisor, loguea el prompt │
+│                                │  original sin los chunks ni el historial.   │
+│                                │  ✅ Poner SimpleLoggerAdvisor el último,    │
+│                                │  así loguea el prompt final completo.       │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Un Advisor custom no recibe   │  El Advisor no está registrado como bean de │
+│  las dependencias de Spring    │  Spring. Si se instancia con new en el      │
+│  (@Autowired no funciona)      │  builder, Spring no inyecta dependencias.   │
+│                                │  ✅ Declararlo como @Component y pasarlo    │
+│                                │  como bean inyectado al builder, no como    │
+│                                │  new MiAdvisor() sin dependencias.          │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El advisor de seguridad       │  SafeGuardAdvisor está posicionado después  │
+│  (SafeGuard) no bloquea        │  de un advisor que ya modificó el prompt.   │
+│  contenido que debería         │  Evalúa el texto modificado, no el original.│
+│  bloquear                      │  ✅ Poner SafeGuardAdvisor el primero,      │
+│                                │  antes de cualquier otro advisor.           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El advisor custom no se       │  getOrder() devuelve el mismo valor que     │
+│  ejecuta en el orden esperado  │  otro advisor ya registrado. Spring ejecuta │
+│                                │  advisors con el mismo orden en orden        │
+│                                │  indefinido.                                │
+│                                │  ✅ Usar valores de orden explícitos y      │
+│                                │  únicos: Ordered.HIGHEST_PRECEDENCE,        │
+│                                │  Ordered.LOWEST_PRECEDENCE, o valores como  │
+│                                │  100, 200, 300...                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Los advisors registrados en   │  Los advisors en defaultAdvisors() se usan  │
+│  defaultAdvisors() se duplican │  en TODAS las llamadas. Si además los añades│
+│  en algunas peticiones         │  con .advisors() en la petición concreta,   │
+│                                │  se ejecutan dos veces: historial duplicado, │
+│                                │  RAG duplicado, etc.                        │
+│                                │  ✅ Los advisors de configuración global van │
+│                                │  en defaultAdvisors(). Los temporales o de  │
+│                                │  contexto van en .advisors() de la petición.│
+└────────────────────────────────┴─────────────────────────────────────────────┘
+```
+
 ---
 
-
----
-
-> **[← Volver al índice](00_indice.md)**
+> **[← Memory](11_memory.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Multimodalidad →](13_multimodalidad.md)**

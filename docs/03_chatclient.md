@@ -10,22 +10,22 @@
 
 ## Contenido
 
-- [6.1 Inyección y uso básico](#61-inyección-y-uso-básico)
-- [6.2 System Prompt global](#62-chatclient-con-system-prompt-global)
-- [6.3 Estructura completa de una petición](#63-estructura-completa-de-una-petición)
-- [6.4 ChatResponse — respuesta completa con metadata](#64-chatresponse--respuesta-completa-con-metadata)
-- [6.5 ChatOptions — todos los parámetros explicados](#65-chatoptions--todos-los-parámetros-explicados)
-- [6.6 Múltiples ChatClients para distintos propósitos](#66-múltiples-chatclients-para-distintos-propósitos)
-- [6.7 Manejo de errores y excepciones](#67-manejo-de-errores-y-excepciones)
-- [6.8 ChatClient vs ChatModel — cuándo usar cada uno](#68-chatclient-vs-chatmodel--cuándo-usar-cada-uno)
+- [3.1 Inyección y uso básico](#31-inyección-y-uso-básico)
+- [3.2 System Prompt global](#32-chatclient-con-system-prompt-global)
+- [3.3 Estructura completa de una petición](#33-estructura-completa-de-una-petición)
+- [3.4 ChatResponse — respuesta completa con metadata](#34-chatresponse--respuesta-completa-con-metadata)
+- [3.5 ChatOptions — todos los parámetros explicados](#35-chatoptions--todos-los-parámetros-explicados)
+- [3.6 Múltiples ChatClients para distintos propósitos](#36-múltiples-chatclients-para-distintos-propósitos)
+- [3.7 Manejo de errores y excepciones](#37-manejo-de-errores-y-excepciones)
+- [3.8 ChatClient vs ChatModel — cuándo usar cada uno](#38-chatclient-vs-chatmodel--cuándo-usar-cada-uno)
 
 ---
 
-## 6. ChatClient — el núcleo de Spring AI
+## 3. ChatClient — el núcleo de Spring AI
 
 `ChatClient` es el punto de entrada principal. Tiene una API fluida (Fluent API) muy limpia.
 
-### 6.1 Inyección y uso básico
+### 3.1 Inyección y uso básico
 
 ```java
 @RestController
@@ -58,7 +58,7 @@ Respuesta ←──  [Tu App] ←──  [Spring AI] ←────────
 "¡Hola! ¿En qué puedo ayudarte hoy?"
 ```
 
-### 6.2 ChatClient con System Prompt global
+### 3.2 ChatClient con System Prompt global
 
 El **system prompt** define el "carácter" o "rol" del asistente. Se puede configurar una vez
 para todo el cliente:
@@ -83,7 +83,7 @@ public class AiConfig {
 
 Ahora **todos los usos** de este `ChatClient` tendrán ese comportamiento automáticamente.
 
-### 6.3 Estructura completa de una petición
+### 3.3 Estructura completa de una petición
 
 ```java
 String respuesta = chatClient.prompt()
@@ -93,9 +93,9 @@ String respuesta = chatClient.prompt()
 
     // --- Opciones del modelo (override de la config) ---
     .options(OpenAiChatOptions.builder()
-        .withModel("gpt-4o")
-        .withTemperature(0.2f)                  // más preciso para SQL
-        .withMaxTokens(500)
+        .model("gpt-4o")
+        .temperature(0.2)                  // más preciso para SQL
+        .maxTokens(500)
         .build())
 
     // --- Llamada ---
@@ -103,7 +103,7 @@ String respuesta = chatClient.prompt()
     .content();
 ```
 
-### 6.4 ChatResponse — respuesta completa con metadata
+### 3.4 ChatResponse — respuesta completa con metadata
 
 ```java
 ChatResponse response = chatClient.prompt()
@@ -133,7 +133,7 @@ System.out.println("Razón de parada: " + finishReason);
 
 ---
 
-## 6.5 ChatOptions — todos los parámetros explicados
+## 3.5 ChatOptions — todos los parámetros explicados
 
 `ChatOptions` controla cómo genera texto el modelo. Estos parámetros son los más importantes
 que debes entender y ajustar según la tarea.
@@ -143,13 +143,13 @@ que debes entender y ajustar según la tarea.
 ```java
 // Con OpenAI como ejemplo — cada proveedor tiene su clase Options propia
 OpenAiChatOptions options = OpenAiChatOptions.builder()
-    .withModel("gpt-4o-mini")
-    .withTemperature(0.7f)
-    .withMaxTokens(2000)
-    .withTopP(1.0f)
-    .withFrequencyPenalty(0.0f)
-    .withPresencePenalty(0.0f)
-    .withStop(List.of("FIN", "---"))   // tokens que detienen la generación
+    .model("gpt-4o-mini")
+    .temperature(0.7)
+    .maxTokens(2000)
+    .topP(1.0)
+    .frequencyPenalty(0.0)
+    .presencePenalty(0.0)
+    .stop(List.of("FIN", "---"))   // tokens que detienen la generación
     .build();
 ```
 
@@ -206,9 +206,9 @@ public class AiConfig {
         return builder
             .defaultSystem("Eres un asistente técnico experto en Java.")
             .defaultOptions(OpenAiChatOptions.builder()
-                .withModel("gpt-4o-mini")
-                .withTemperature(0.3f)   // preciso para preguntas técnicas
-                .withMaxTokens(1500)
+                .model("gpt-4o-mini")
+                .temperature(0.3)   // preciso para preguntas técnicas
+                .maxTokens(1500)
                 .build())
             .build();
     }
@@ -222,8 +222,8 @@ public class AiConfig {
 String respuestaCreativa = chatClient.prompt()
     .user("Dame 10 ideas de nombres para una startup de IA")
     .options(OpenAiChatOptions.builder()
-        .withTemperature(1.2f)    // ← sobreescribe el 0.3 del builder para esta llamada
-        .withMaxTokens(300)
+        .temperature(1.2)    // ← sobreescribe el 0.3 del builder para esta llamada
+        .maxTokens(300)
         .build())
     .call()
     .content();
@@ -231,7 +231,7 @@ String respuestaCreativa = chatClient.prompt()
 
 ---
 
-## 6.6 Múltiples ChatClients para distintos propósitos
+## 3.6 Múltiples ChatClients para distintos propósitos
 
 En una aplicación real es frecuente necesitar varios `ChatClient` con configuraciones
 distintas: uno para chat de usuario, otro para análisis preciso de datos, otro para
@@ -247,9 +247,9 @@ public class AiConfig {
         return builder
             .defaultSystem("Eres un asistente amable que responde en español.")
             .defaultOptions(OpenAiChatOptions.builder()
-                .withModel("gpt-4o-mini")
-                .withTemperature(0.7f)
-                .withMaxTokens(800)
+                .model("gpt-4o-mini")
+                .temperature(0.7)
+                .maxTokens(800)
                 .build())
             .build();
     }
@@ -260,9 +260,9 @@ public class AiConfig {
         return builder
             .defaultSystem("Extrae datos exactos. Responde SOLO en JSON válido.")
             .defaultOptions(OpenAiChatOptions.builder()
-                .withModel("gpt-4o")       // modelo más potente para análisis
-                .withTemperature(0.0f)      // determinista
-                .withMaxTokens(500)
+                .model("gpt-4o")       // modelo más potente para análisis
+                .temperature(0.0)      // determinista
+                .maxTokens(500)
                 .build())
             .build();
     }
@@ -272,9 +272,9 @@ public class AiConfig {
     public ChatClient chatClientCreativo(ChatClient.Builder builder) {
         return builder
             .defaultOptions(OpenAiChatOptions.builder()
-                .withModel("gpt-4o")
-                .withTemperature(1.1f)
-                .withMaxTokens(2000)
+                .model("gpt-4o")
+                .temperature(1.1)
+                .maxTokens(2000)
                 .build())
             .build();
     }
@@ -301,7 +301,7 @@ public class ContentService {
 
 ---
 
-## 6.7 Manejo de errores y excepciones
+## 3.7 Manejo de errores y excepciones
 
 Las APIs de IA pueden fallar. Debes conocer qué excepciones puede lanzar `ChatClient`
 y cómo manejarlas correctamente.
@@ -390,7 +390,7 @@ spring:
 
 ---
 
-## 6.8 ChatClient vs ChatModel — cuándo usar cada uno
+## 3.8 ChatClient vs ChatModel — cuándo usar cada uno
 
 Esta es la pregunta más frecuente al empezar. La respuesta corta: **usa siempre `ChatClient`**.
 

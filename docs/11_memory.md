@@ -1,15 +1,20 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Tools](10_tools.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Advisors →](12_advisors.md)**
 
 ---
 
-## 15. Memory / Conversation History — contexto de conversación
+# Capítulo 11 — Memory
+
+> Cómo mantener el historial de conversación para que el modelo
+> "recuerde" entre peticiones. Implementaciones en memoria y persistente (BD).
+
+## 11. Memory / Conversation History — contexto de conversación
 
 Por defecto los modelos de IA son **stateless**: cada petición es independiente y el
 modelo no recuerda conversaciones anteriores. Para hacer un chatbot real necesitas
 mantener el historial.
 
-### El problema — stateless por diseño
+### 11.1 El problema — stateless por diseño
 
 ```
 Sin memory:
@@ -64,7 +69,7 @@ cada nuevo prompt**. El modelo "recuerda" porque se lo contamos nosotros cada ve
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### El problema de la ventana de contexto y el coste
+### 11.2 El problema de la ventana de contexto y el coste
 
 Este enfoque tiene un problema real que debes conocer:
 
@@ -88,7 +93,7 @@ Este enfoque tiene un problema real que debes conocer:
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Solución con MessageChatMemoryAdvisor
+### 11.3 Solución con MessageChatMemoryAdvisor
 
 ```java
 @Configuration
@@ -133,7 +138,7 @@ public class ChatbotController {
 record ChatRequest(String conversationId, String mensaje) {}
 ```
 
-### Los dos tipos de advisor de memoria — diferencias importantes
+### 11.4 Los dos tipos de advisor de memoria — diferencias importantes
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -167,7 +172,7 @@ record ChatRequest(String conversationId, String mensaje) {}
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Cómo funciona internamente
+### 11.5 Cómo funciona internamente
 
 ```
 Conversación ID: "user-123"
@@ -188,7 +193,7 @@ Turno 2:
   Respuesta: "Te llamas Carlos."  ✓
 ```
 
-### Memoria persistente con base de datos
+### 11.6 Memoria persistente con base de datos
 
 ```java
 // Para producción: guardar el historial en BD (no se pierde al reiniciar)
@@ -203,9 +208,53 @@ public ChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
 > - `JdbcChatMemory` → producción. Historial persistente en tu BD.
 > - `conversationHistoryWindowSize(10)` → siempre configúralo para controlar el coste.
 
+## 11.7 Errores comunes
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES CON MEMORY                                               │
+├────────────────────────────────┬─────────────────────────────────────────────┤
+│  Error                         │  Causa y solución                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El chatbot "olvida" todo       │  No se está pasando el conversationId en    │
+│  entre mensajes del mismo       │  cada petición. Sin ese ID, el advisor      │
+│  usuario                        │  no sabe qué historial recuperar y cada     │
+│                                 │  mensaje se trata como conversación nueva.  │
+│                                 │  ✅ Siempre pasar un ID estable por usuario:│
+│                                 │  .advisors(a -> a.param(                    │
+│                                 │    CHAT_MEMORY_CONVERSATION_ID_KEY, userId))│
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El coste de la API se          │  No se ha configurado                       │
+│  dispara con conversaciones     │  conversationHistoryWindowSize. Por defecto │
+│  largas                         │  Spring AI incluye TODO el historial.       │
+│                                 │  Con 50 turnos y respuestas largas, cada    │
+│                                 │  llamada incluye 20K+ tokens de historial.  │
+│                                 │  ✅ Configurar un tamaño máximo:            │
+│                                 │  MessageChatMemoryAdvisor.builder(memory)   │
+│                                 │    .conversationHistoryWindowSize(10)       │
+│                                 │    .build()                                 │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  InMemoryChatMemory en prod:    │  InMemoryChatMemory guarda el historial en  │
+│  los usuarios pierden la        │  la JVM. Al reiniciar la app (deploy, crash,│
+│  conversación al reiniciar      │  escalado) se pierde todo el historial.     │
+│                                 │  ✅ En producción usar JdbcChatMemory o     │
+│                                 │  cualquier implementación persistente.      │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  InMemoryChatMemory crece       │  Sin ningún mecanismo de limpieza, la       │
+│  sin límite y consume           │  memoria RAM crece indefinidamente si hay   │
+│  demasiada RAM                  │  muchos usuarios con historiales largos.    │
+│                                 │  ✅ Configurar windowSize para truncar.     │
+│                                 │  En producción, JdbcChatMemory + una tarea  │
+│                                 │  programada que borre historiales antiguos. │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Error: múltiples beans         │  Si tienes varios ChatClient con distintos  │
+│  ChatMemory y Spring no sabe    │  ChatMemory, Spring no puede inyectar por   │
+│  cuál inyectar                  │  tipo. Necesitas cualificarlos.             │
+│                                 │  ✅ Usar @Qualifier("memoriaInmediata") o   │
+│                                 │  @Bean con nombre explícito.                │
+└────────────────────────────────┴─────────────────────────────────────────────┘
+```
+
 ---
 
-
----
-
-> **[← Volver al índice](00_indice.md)**
+> **[← Tools](10_tools.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Advisors →](12_advisors.md)**

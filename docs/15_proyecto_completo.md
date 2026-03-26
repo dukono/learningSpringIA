@@ -1,9 +1,66 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](00_indice.md)**
 
 ---
 
-## 20. Proyecto completo real — Chatbot con RAG
+# Capítulo 15 — Proyecto completo real
+
+> Chatbot de documentación técnica que integra todos los conceptos del curso:
+> RAG, memoria de conversación, streaming, advisors, multiprofiles y observabilidad.
+
+## 15.1 Qué construimos y por qué
+
+Este capítulo integra todos los conceptos anteriores en un proyecto coherente y deployable.
+El caso de uso es un **asistente de documentación técnica** que responde preguntas sobre
+los propios documentos de la empresa, con memoria por usuario y streaming.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  QUÉ INTEGRA ESTE PROYECTO                                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  RAG              → respuestas basadas en TUS documentos, no en el modelo   │
+│  Memory           → el usuario puede tener conversaciones multi-turno       │
+│  Streaming        → el usuario ve la respuesta token a token                │
+│  Advisors         → RAG + Memory + Logging declarativos, en un solo lugar   │
+│  Profiles         → Ollama en dev, OpenAI en prod, sin cambiar código       │
+│  Observabilidad   → métricas de tokens y latencia en /actuator/metrics      │
+│                                                                              │
+│  El código Java es idéntico en dev y en prod.                                │
+│  Solo cambia la configuración (application-{perfil}.yml).                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  FLUJO DE UNA PETICIÓN EN EL SISTEMA                                         │
+│                                                                              │
+│  Usuario                                                                     │
+│    │  POST /api/chat {"conversationId":"u1", "mensaje":"¿cómo uso JWT?"}     │
+│    ▼                                                                         │
+│  ChatController → ChatService                                                │
+│    │                                                                         │
+│    ▼                                                                         │
+│  [MessageChatMemoryAdvisor]  recupera historial de "u1" de ChatMemory        │
+│    │                                                                         │
+│    ▼                                                                         │
+│  [QuestionAnswerAdvisor]  convierte la pregunta en vector, busca en          │
+│    │                      VectorStore, añade 5 chunks de documentos al prompt│
+│    ▼                                                                         │
+│  [SimpleLoggerAdvisor]   loguea el prompt final completo                     │
+│    │                                                                         │
+│    ▼                                                                         │
+│  LLM (Ollama/OpenAI según perfil)  genera la respuesta                       │
+│    │                                                                         │
+│    ▼                                                                         │
+│  [MessageChatMemoryAdvisor]  guarda la respuesta en el historial de "u1"    │
+│    │                                                                         │
+│    ▼                                                                         │
+│  Usuario recibe: {"respuesta": "Para configurar JWT en Spring Security..."}  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+## 15.2 Proyecto completo real — Chatbot con RAG
 
 Ejemplo de un **asistente de documentación técnica** que responde preguntas sobre tus
 propios documentos.
@@ -64,7 +121,7 @@ public class AiConfig {
                 new MessageChatMemoryAdvisor(memory),
                 new QuestionAnswerAdvisor(
                     vectorStore,
-                    SearchRequest.defaults().withTopK(5)
+                    SearchRequest.builder().topK(5).build()
                 ),
                 new SimpleLoggerAdvisor()
             )
@@ -224,9 +281,60 @@ POST /api/chat
 {"respuesta": "Para configurar JWT según vuestra documentación, debes..."}
 ```
 
+## 15.3 Errores comunes al integrar todo
+
+Cuando se combinan varios componentes en un proyecto real, los errores más frecuentes
+son de integración — no de un componente individual:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES EN PROYECTOS INTEGRADOS                                  │
+├────────────────────────────────┬─────────────────────────────────────────────┤
+│  Error                         │  Causa y solución                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  "No unique bean of type       │  Hay dos proveedores configurados en el     │
+│  ChatModel" al arrancar        │  pom.xml (ej: ollama + openai) y Spring    │
+│                                │  no sabe cuál usar para el ChatClient.     │
+│                                │  ✅ Usar @Profile en los beans de           │
+│                                │  ChatClient para activar solo uno por       │
+│                                │  entorno, o excluir la autoconfiguración   │
+│                                │  del proveedor no activo en el YAML.        │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El RAG devuelve resultados    │  Los documentos se indexaron con un         │
+│  irrelevantes en producción    │  EmbeddingModel (Ollama, 768 dims) y en    │
+│  pero correctos en dev         │  prod se busca con otro (OpenAI, 1536 dims).│
+│                                │  Los vectores son incomparables.            │
+│                                │  ✅ Reindexar los documentos con el         │
+│                                │  EmbeddingModel de producción, o asegurarse │
+│                                │  de que dev y prod usan el mismo modelo.    │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El chatbot no recuerda        │  conversationId no se está propagando       │
+│  conversaciones aunque memory  │  correctamente desde el cliente. Si el      │
+│  está configurado              │  frontend genera un ID nuevo en cada        │
+│                                │  petición, cada mensaje es una conversación │
+│                                │  nueva para el advisor.                     │
+│                                │  ✅ El cliente debe guardar y reusar el     │
+│                                │  mismo conversationId durante toda la       │
+│                                │  sesión del usuario.                        │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  En producción el streaming    │  El proxy inverso (Nginx, API Gateway) no   │
+│  falla o se corta              │  está configurado para SSE/streaming.       │
+│                                │  Por defecto, muchos proxies almacenan la   │
+│                                │  respuesta completa antes de enviarla.      │
+│                                │  ✅ Configurar en Nginx:                    │
+│                                │  proxy_buffering off;                       │
+│                                │  proxy_read_timeout 300s;                   │
+│                                │  X-Accel-Buffering: no;                     │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  SimpleVectorStore y           │  El proyecto de ejemplo usa SimpleVectorStore│
+│  InMemoryChatMemory en prod    │  e InMemoryChatMemory para simplicidad.      │
+│  — pérdida de datos            │  En producción, todo se pierde al reiniciar.│
+│                                │  ✅ Reemplazar antes del primer deploy:      │
+│                                │  SimpleVectorStore → pgvector (Capítulo 08) │
+│                                │  InMemoryChatMemory → JdbcChatMemory        │
+└────────────────────────────────┴─────────────────────────────────────────────┘
+```
+
 ---
 
-
----
-
-> **[← Volver al índice](00_indice.md)**
+> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](00_indice.md)**

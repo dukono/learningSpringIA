@@ -10,22 +10,22 @@
 
 ## Contenido
 
-- [10.1 Dependencia necesaria](#dependencia-necesaria)
-- [10.2 Implementación básica](#implementación)
-- [10.3 Manejo de errores en streaming](#manejo-de-errores-en-streaming)
-- [10.4 Streaming con Advisors (RAG + Memory)](#104-streaming-con-advisors-rag--memory)
-- [10.5 Streaming con Tools — cómo funciona](#105-streaming-con-tools--cómo-funciona)
-- [10.6 Operaciones Flux útiles](#106-operaciones-flux-útiles)
-- [10.7 Cliente JavaScript (SSE)](#cliente-javascript-para-consumir-el-stream-sse)
+- [6.1 Dependencia necesaria](#61-dependencia-necesaria)
+- [6.2 Implementación básica](#62-implementación-básica)
+- [6.3 Manejo de errores en streaming](#63-manejo-de-errores-en-streaming)
+- [6.4 Cliente JavaScript (SSE)](#64-cliente-javascript-sse)
+- [6.5 Streaming con Advisors (RAG + Memory)](#65-streaming-con-advisors-rag--memory)
+- [6.6 Streaming con Tools — cómo funciona](#66-streaming-con-tools--cómo-funciona)
+- [6.7 Operaciones Flux útiles](#67-operaciones-flux-útiles)
 
 ---
 
-## 10. Streaming — respuesta en tiempo real
+## 6. Streaming — respuesta en tiempo real
 
 El **streaming** es como funciona ChatGPT: la respuesta llega token a token en lugar
 de esperar a que termine toda la generación.
 
-### Dependencia necesaria
+### 6.1 Dependencia necesaria
 
 El streaming en Spring AI usa **Project Reactor** (WebFlux). Asegúrate de tenerlo:
 
@@ -36,7 +36,7 @@ El streaming en Spring AI usa **Project Reactor** (WebFlux). Asegúrate de tener
 </dependency>
 ```
 
-### Implementación
+### 6.2 Implementación básica
 
 ```java
 @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -59,7 +59,7 @@ Con streaming (reactivo):
               ↑ cada token llega en milisegundos → el usuario ve texto aparecer
 ```
 
-### Manejo de errores en streaming
+### 6.3 Manejo de errores en streaming
 
 ```java
 @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -77,7 +77,7 @@ public Flux<String> chatStream(@RequestParam String pregunta) {
 }
 ```
 
-### Cliente JavaScript para consumir el stream (SSE)
+### 6.4 Cliente JavaScript (SSE)
 
 ```javascript
 // Server-Sent Events — el navegador recibe los tokens en tiempo real
@@ -96,7 +96,7 @@ eventSource.onerror = () => {
 
 ---
 
-## 10.4 Streaming con Advisors (RAG + Memory)
+## 6.5 Streaming con Advisors (RAG + Memory)
 
 El streaming es totalmente compatible con la cadena de Advisors. El comportamiento es:
 el Advisor **procesa la petición** antes de enviarla al modelo (de forma bloqueante),
@@ -140,7 +140,7 @@ public class AiConfig {
             .defaultSystem("Eres un asistente técnico. Responde basándote en la documentación.")
             .defaultAdvisors(
                 new MessageChatMemoryAdvisor(memory),
-                new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults().withTopK(4))
+                new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().topK(4).build())
             )
             .build();
     }
@@ -175,7 +175,7 @@ public class ChatStreamController {
 
 ---
 
-## 10.5 Streaming con Tools — cómo funciona
+## 6.6 Streaming con Tools — cómo funciona
 
 Cuando el modelo necesita llamar a Tools durante el streaming, el comportamiento es
 diferente a un streaming puro: el stream "pausa" mientras se ejecutan los tools y
@@ -221,7 +221,7 @@ public class AssistantStreamController {
 
 ---
 
-## 10.6 Operaciones Flux útiles
+## 6.7 Operaciones Flux útiles
 
 `Flux<String>` es una secuencia reactiva. Puedes aplicar operaciones antes de enviarlo
 al cliente.
@@ -289,6 +289,50 @@ public class ChatStreamService {
 │  .collect(Collectors.joining())→ bloquea hasta tener la respuesta completa   │
 │                                  útil en @Service sin frontend reactivo      │
 └──────────────────────────────────────────────────────────────────────────────┘
+```
+
+## 6.8 Errores comunes
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES EN STREAMING                                             │
+├────────────────────────────────┬─────────────────────────────────────────────┤
+│  Error                         │  Causa y solución                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El cliente recibe todo el     │  Falta produces = TEXT_EVENT_STREAM_VALUE   │
+│  texto de golpe, sin streaming │  en el @GetMapping. Sin ese header, el      │
+│                                │  navegador espera a que el Flux complete     │
+│                                │  antes de mostrar nada.                     │
+│                                │  ✅ @GetMapping(produces =                  │
+│                                │       MediaType.TEXT_EVENT_STREAM_VALUE)    │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  NoSuchBeanDefinitionException │  Falta spring-boot-starter-webflux en el   │
+│  o error de compilación con    │  pom.xml. Spring AI streaming usa Project   │
+│  Flux / Mono                   │  Reactor que viene con WebFlux.             │
+│                                │  ✅ Añadir la dependencia webflux           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El stream llega completo tras │  Se está llamando a .call().content() en    │
+│  una pausa larga — no hay UX   │  vez de .stream().content(). La API         │
+│  de "escribiendo..."           │  bloqueante espera la respuesta entera.     │
+│                                │  ✅ Cambiar .call() por .stream()           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  ERROR: "blocking call in      │  Se está mezclando código bloqueante        │
+│  non-blocking context"         │  (JDBC, RestTemplate) dentro del pipeline  │
+│  (ReactorBlockingException)    │  reactivo. Reactor detecta que un hilo      │
+│                                │  de evento está bloqueado.                  │
+│                                │  ✅ Mover la lógica bloqueante fuera del    │
+│                                │  Flux, o ejecutarla en                      │
+│                                │  Schedulers.boundedElastic()               │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  El stream se corta a mitad    │  Timeout del proxy inverso (Nginx/Gateway)  │
+│  de la respuesta sin mensaje   │  cierra conexiones inactivas. Con streaming │
+│  de error                      │  largo, el proxy no ve actividad suficiente.│
+│                                │  ✅ Configurar proxy_read_timeout en Nginx  │
+│                                │  o aumentar el timeout del gateway.         │
+│                                │  Alternativa: enviar un heartbeat periódico │
+│                                │  con .mergeWith(Flux.interval(10s)          │
+│                                │    .map(t -> ""))                           │
+└────────────────────────────────┴─────────────────────────────────────────────┘
 ```
 
 ---

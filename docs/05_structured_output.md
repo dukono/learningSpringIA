@@ -10,22 +10,22 @@
 
 ## Contenido
 
-- [9.1 Con Records (recomendado en Java 21+)](#91-con-records-recomendado-en-java-21)
-- [9.2 Con listas](#92-con-listas)
-- [9.3 Con Map para datos libres](#93-con-map-para-datos-libres)
-- [9.4 Cómo funciona internamente — BeanOutputConverter](#94-cómo-funciona-internamente--beanoutputconverter)
-- [9.5 Manejo de errores de parsing](#95-manejo-de-errores-de-parsing)
-- [9.6 Validación con Jakarta Bean Validation](#96-validación-con-jakarta-bean-validation)
-- [9.7 Objetos anidados y grafos complejos](#97-objetos-anidados-y-grafos-complejos)
+- [5.1 Con Records (recomendado en Java 21+)](#51-con-records-recomendado-en-java-21)
+- [5.2 Con listas](#52-con-listas)
+- [5.3 Con Map para datos libres](#53-con-map-para-datos-libres)
+- [5.4 Cómo funciona internamente — BeanOutputConverter](#54-cómo-funciona-internamente--beanoutputconverter)
+- [5.5 Manejo de errores de parsing](#55-manejo-de-errores-de-parsing)
+- [5.6 Validación con Jakarta Bean Validation](#56-validación-con-jakarta-bean-validation)
+- [5.7 Objetos anidados y grafos complejos](#57-objetos-anidados-y-grafos-complejos)
 
 ---
 
-## 9. Structured Output — respuestas tipadas
+## 5. Structured Output — respuestas tipadas
 
 En lugar de recibir texto y parsear JSON manualmente, Spring AI puede convertir
 automáticamente la respuesta en un objeto Java.
 
-### 9.1 Con Records (recomendado en Java 21+)
+### 5.1 Con Records (recomendado en Java 21+)
 
 ```java
 // Define el record que quieres recibir
@@ -66,7 +66,7 @@ public class ReviewService {
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-### 9.2 Con listas
+### 5.2 Con listas
 
 ```java
 record Receta(String nombre, List<String> ingredientes, int minutosPreparacion) {}
@@ -81,7 +81,7 @@ List<Receta> recetas = chatClient.prompt()
 // recetas.get(0).minutosPreparacion() → 25
 ```
 
-### 9.3 Con Map para datos libres
+### 5.3 Con Map para datos libres
 
 ```java
 Map<String, Object> datos = chatClient.prompt()
@@ -95,7 +95,7 @@ String capital = (String) datos.get("capital");  // "Madrid"
 
 ---
 
-## 9.4 Cómo funciona internamente — BeanOutputConverter
+## 5.4 Cómo funciona internamente — BeanOutputConverter
 
 Entender lo que ocurre internamente es fundamental para diagnosticar problemas.
 
@@ -122,7 +122,7 @@ Entender lo que ocurre internamente es fundamental para diagnosticar problemas.
 │  ObjectMapper.readValue(respuesta, MiClase.class)                            │
 │  → objeto Java tipado listo para usar                                        │
 │                                                                              │
-│  Si el modelo no devuelve JSON válido → lanza ShutdownOutputParserException  │
+│  Si el modelo no devuelve JSON válido → lanza OutputParserException  │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -164,7 +164,7 @@ public class AnalysisService {
 
 ---
 
-## 9.5 Manejo de errores de parsing
+## 5.5 Manejo de errores de parsing
 
 El caso más frecuente: el modelo no devuelve JSON válido. Ocurre más con modelos
 pequeños (llama3.2, phi-3) que con GPT-4o o Claude.
@@ -231,7 +231,7 @@ public class ResilientStructuredService {
 // ✅ SOLUCIÓN 1: bajar la temperature para structured output
 chatClient.prompt()
     .user(pregunta)
-    .options(OpenAiChatOptions.builder().withTemperature(0.0f).build())
+    .options(OpenAiChatOptions.builder().temperature(0.0).build())
     .call()
     .entity(MiClase.class);
 
@@ -249,14 +249,14 @@ chatClient.prompt()
 // ✅ SOLUCIÓN 3: subir maxTokens si la respuesta puede ser grande
 chatClient.prompt()
     .user(pregunta)
-    .options(OpenAiChatOptions.builder().withMaxTokens(1000).build())
+    .options(OpenAiChatOptions.builder().maxTokens(1000).build())
     .call()
     .entity(MiClase.class);
 ```
 
 ---
 
-## 9.6 Validación con Jakarta Bean Validation
+## 5.6 Validación con Jakarta Bean Validation
 
 Spring AI no valida el contenido de los campos — solo verifica que el JSON es parseable.
 Para validar el contenido usa las anotaciones estándar de Jakarta.
@@ -295,7 +295,7 @@ public class ValidatedAnalysisService {
     public AnalisisProducto analizarYValidar(String review) {
         AnalisisProducto resultado = chatClient.prompt()
             .user("Analiza: " + review)
-            .options(OpenAiChatOptions.builder().withTemperature(0.0f).build())
+            .options(OpenAiChatOptions.builder().temperature(0.0).build())
             .call()
             .entity(AnalisisProducto.class);
 
@@ -317,7 +317,7 @@ public class ValidatedAnalysisService {
 
 ---
 
-## 9.7 Objetos anidados y grafos complejos
+## 5.7 Objetos anidados y grafos complejos
 
 Spring AI maneja automáticamente objetos Java anidados, listas de objetos y
 estructuras complejas.
@@ -340,7 +340,7 @@ record Contacto(String nombre, String email, String cargo) {}
 // Spring AI genera las instrucciones JSON para toda la estructura automáticamente
 Empresa empresa = chatClient.prompt()
     .user("Extrae todos los datos de esta empresa del siguiente texto: " + textoEmpresa)
-    .options(OpenAiChatOptions.builder().withTemperature(0.0f).build())
+    .options(OpenAiChatOptions.builder().temperature(0.0).build())
     .call()
     .entity(Empresa.class);
 

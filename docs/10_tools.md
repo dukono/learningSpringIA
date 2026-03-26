@@ -1,9 +1,14 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← RAG](09_rag.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Memory →](11_memory.md)**
 
 ---
 
-## 14. Tools — la IA ejecuta tu código (API 1.1.0)
+# Capítulo 10 — Tools / Function Calling
+
+> Permite que el modelo de IA decida cuándo llamar a funciones
+> de tu aplicación para obtener datos en tiempo real o ejecutar acciones.
+
+## 10. Tools — la IA ejecuta tu código (API 1.1.0)
 
 **Tools** (también llamado Function Calling o Tool Use) permite que el modelo de IA
 **decida cuándo llamar a funciones de tu aplicación** para obtener información en tiempo real
@@ -25,7 +30,7 @@ Con Tools:
 
 ---
 
-### 14.1 ¿Cuándo decide el modelo usar un Tool?
+### 10.1 ¿Cuándo decide el modelo usar un Tool?
 
 Esta es la pregunta más importante para un usuario nuevo. **El modelo decide solo.** Tú
 defines qué tools existen y qué hacen (con una descripción en texto). El modelo lee esas
@@ -72,7 +77,7 @@ public ProductInfo getProductInfo(Long productId) { ... }
 
 ---
 
-### 14.2 API nueva con `@Tool` (Spring AI 1.1.0)
+### 10.2 API nueva con `@Tool` (Spring AI 1.1.0)
 
 En Spring AI 1.1.0 se introdujo la anotación `@Tool` directamente sobre métodos Java.
 Es la forma **recomendada** en la versión 1.1.0 y posteriores.
@@ -229,7 +234,7 @@ public String preguntarConContexto(String mensaje, String userId) {
 
 ---
 
-### 14.3 API antigua con `@Bean` + `Function<>` (compatible)
+### 10.3 API antigua con `@Bean` + `Function<>` (compatible)
 
 La API anterior (Spring AI 1.0.x) sigue funcionando en 1.1.0. Se basa en registrar
 `Function<Input, Output>` como `@Bean` con `@Description`.
@@ -282,7 +287,7 @@ chatClient.prompt()
 
 ---
 
-### 14.4 Tools encadenadas
+### 10.4 Tools encadenadas
 
 El modelo puede llamar a varios tools en secuencia, usando el resultado de uno para
 decidir llamar al siguiente. Esto se llama **tool chaining** y ocurre automáticamente.
@@ -338,7 +343,7 @@ public class ShopTools {
 
 ---
 
-### 14.5 Seguridad en Tools
+### 10.5 Seguridad en Tools
 
 Los tools son poderosos, pero también un **vector de ataque potencial** si no se diseñan
 con cuidado. Hay que tener en cuenta:
@@ -425,7 +430,7 @@ public class SecureOrderTools {
 
 ---
 
-## 14.5 Retry automático — reintentos ante fallos de la IA
+## 10.6 Retry automático — reintentos ante fallos de la IA
 
 Las APIs de IA (OpenAI, Anthropic, etc.) pueden fallar en cualquier momento. Spring AI
 incluye el artefacto `spring-ai-retry` que gestiona **reintentos automáticos** con
@@ -571,7 +576,4 @@ resilience4j:
 
 ---
 
-
----
-
-> **[← Volver al índice](00_indice.md)**
+> **[← RAG](09_rag.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Memory →](11_memory.md)**

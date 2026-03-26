@@ -1,9 +1,14 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Embeddings](07_embeddings.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: RAG →](09_rag.md)**
 
 ---
 
-## 12. Vector Store — base de datos para IA
+# Capítulo 08 — Vector Store
+
+> Base de datos especializada en almacenar y buscar vectores (embeddings)
+> por similitud semántica. Fundamento técnico del RAG.
+
+## 8. Vector Store — base de datos para IA
 
 Un **Vector Store** es una base de datos especializada en almacenar y buscar vectores
 (embeddings). En lugar de buscar por texto exacto o índices, busca por **similitud
@@ -118,9 +123,11 @@ public class DocumentService {
     // Buscar documentos similares a una consulta
     public List<Document> buscar(String consulta) {
         return vectorStore.similaritySearch(
-            SearchRequest.query(consulta)
-                .withTopK(3)                        // los 3 más similares
-                .withSimilarityThreshold(0.7)       // mínimo 70% similitud
+            SearchRequest.builder()
+                .query(consulta)
+                .topK(3)                        // los 3 más similares
+                .similarityThreshold(0.7)       // mínimo 70% similitud
+                .build()
         );
     }
 }
@@ -203,13 +210,15 @@ USING hnsw (embedding vector_cosine_ops);
 ```java
 // Buscar solo en documentos de un tipo o fecha específica
 List<Document> resultados = vectorStore.similaritySearch(
-    SearchRequest.query("¿Cómo devuelvo un producto?")
-        .withTopK(5)
-        .withSimilarityThreshold(0.7)
-        .withFilterExpression("filename == 'politica-devoluciones.pdf'")
+    SearchRequest.builder()
+        .query("¿Cómo devuelvo un producto?")
+        .topK(5)
+        .similarityThreshold(0.7)
+        .filterExpression("filename == 'politica-devoluciones.pdf'")
         // otros filtros posibles:
         // "contentType == 'pdf' && uploadDate >= '2025-01-01'"
         // "department == 'RRHH'"
+        .build()
 );
 ```
 
@@ -217,9 +226,58 @@ List<Document> resultados = vectorStore.similaritySearch(
 > distintos departamentos o distintos proyectos, los filtros evitan que la IA mezcle
 > información de unos con otros. Esencial para aplicaciones B2B.
 
+## Errores comunes con Vector Store
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES CON VECTOR STORE                                         │
+├────────────────────────────────┬─────────────────────────────────────────────┤
+│  Error                         │  Causa y solución                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  SQLException al arrancar:     │  El número de dimensiones en el YAML no    │
+│  "expected 1536 dimensions,    │  coincide con las que genera el modelo de   │
+│  got 768"                      │  embeddings configurado. pgvector valida    │
+│                                │  el tamaño del vector al insertar.          │
+│                                │  ✅ Verificar que dimensions en application │
+│                                │  .yml coincide con el modelo:               │
+│                                │  OpenAI text-embedding-3-small → 1536       │
+│                                │  nomic-embed-text (Ollama) → 768            │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Los datos desaparecen al      │  Se está usando SimpleVectorStore en        │
+│  reiniciar la aplicación       │  producción o staging. Este store es en     │
+│                                │  memoria — pierde todo al parar la JVM.     │
+│                                │  ✅ SimpleVectorStore solo para tests.      │
+│                                │  Producción: pgvector, Chroma o cualquier   │
+│                                │  store persistente.                         │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  ERROR: relation               │  initialize-schema está a false (o no       │
+│  "vector_store" does not exist │  configurado). Spring AI no crea la tabla   │
+│                                │  automáticamente si no se le indica.        │
+│                                │  ✅ Añadir en YAML:                         │
+│                                │  spring.ai.vectorstore.pgvector             │
+│                                │    .initialize-schema: true                 │
+│                                │  (solo la primera vez; en prod es mejor     │
+│                                │  usar Flyway o Liquibase para el schema).   │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  La búsqueda no devuelve nada  │  El umbral de similitud es demasiado alto.  │
+│  aunque hay documentos         │  Con threshold(0.9) solo aparecen textos    │
+│  relevantes                    │  casi idénticos. Los documentos reales      │
+│                                │  rara vez superan 0.85 con consultas        │
+│                                │  distintas aunque sean muy relevantes.      │
+│                                │  ✅ Empezar con threshold(0.5) y ajustar    │
+│                                │  subiendo hasta que los falsos positivos    │
+│                                │  sean aceptables. 0.65-0.75 es habitual.    │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  La indexación de muchos       │  vectorStore.add() se llama con un documento│
+│  documentos es muy lenta       │  a la vez en un bucle. Cada llamada genera  │
+│                                │  una petición al modelo de embeddings y una │
+│                                │  inserción en la BD.                        │
+│                                │  ✅ Pasar la lista completa en una sola     │
+│                                │  llamada: vectorStore.add(listaDeDocs)      │
+│                                │  Spring AI hace el batch automáticamente.   │
+└────────────────────────────────┴─────────────────────────────────────────────┘
+```
+
 ---
 
-
----
-
-> **[← Volver al índice](00_indice.md)**
+> **[← Embeddings](07_embeddings.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: RAG →](09_rag.md)**

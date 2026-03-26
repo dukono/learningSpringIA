@@ -1,13 +1,28 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← ChatClient](03_chatclient.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Structured Output →](05_structured_output.md)**
 
 ---
 
-## 7. Prompts — cómo hablarle a la IA
+# Capítulo 04 — Prompts y PromptTemplate
+
+> Cómo construir mensajes para los modelos de IA, diseñar prompts efectivos
+> y usar templates con variables dinámicas y lógica condicional.
+
+## Contenido
+
+- [4.1 Tipos de mensajes](#41-tipos-de-mensajes)
+- [4.2 Visualización de los roles](#42-visualización-de-los-roles)
+- [4.3 Ingeniería de prompts — cómo escribir prompts efectivos](#43-ingeniería-de-prompts--cómo-escribir-prompts-efectivos)
+- [4.4 PromptTemplate — prompts dinámicos](#44-prompttemplate--prompts-dinámicos)
+- [4.5 StringTemplate — prompts con lógica condicional](#45-stringtemplate--prompts-con-lógica-condicional)
+
+---
+
+## 4. Prompts — cómo hablarle a la IA
 
 Un **Prompt** es el objeto que contiene todos los mensajes que envías al modelo.
 
-### 7.1 Tipos de mensajes
+### 4.1 Tipos de mensajes
 
 ```java
 import org.springframework.ai.chat.messages.*;
@@ -35,7 +50,7 @@ String texto = response.getResult().getOutput().getContent();
 > **Nota:** Si usas `ChatClient` (recomendado) no necesitas construir `Prompt` manualmente.
 > La API fluida `.system()`, `.user()` lo hace por ti internamente.
 
-### 7.2 Visualización de los roles
+### 4.2 Visualización de los roles
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -58,7 +73,7 @@ String texto = response.getResult().getOutput().getContent();
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### 7.3 Ingeniería de prompts — cómo escribir prompts efectivos
+### 4.3 Ingeniería de prompts — cómo escribir prompts efectivos
 
 La calidad de la respuesta depende directamente de la calidad del prompt. Esto se llama
 **Prompt Engineering** y es una habilidad fundamental para cualquier desarrollador que
@@ -206,6 +221,8 @@ Error común: usar temperature=1.0 para extracción de datos
 
 ---
 
+## 4.4 PromptTemplate — prompts dinámicos
+
 `PromptTemplate` funciona como un template de texto donde puedes inyectar variables,
 igual que Thymeleaf o FreeMarker pero para prompts.
 
@@ -273,7 +290,7 @@ String resultado = reviewService.analizarReview(
 }
 ```
 
-### 8.2 StringTemplate — prompts con lógica condicional (spring-ai-template-st)
+### 4.5 StringTemplate — prompts con lógica condicional (spring-ai-template-st)
 
 `PromptTemplate` con `{variables}` simples es suficiente para la mayoría de casos, pero
 a veces necesitas **condicionales, bucles o formato dinámico** dentro del propio template.
@@ -390,4 +407,4 @@ La descripción debe tener 2 párrafos."
 
 ---
 
-> **[← Volver al índice](00_indice.md)**
+> **[← ChatClient](03_chatclient.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Structured Output →](05_structured_output.md)**

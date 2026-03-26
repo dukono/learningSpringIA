@@ -1,9 +1,14 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Advisors](12_advisors.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Observabilidad →](14_observabilidad.md)**
 
 ---
 
-## 17. Multimodalidad — imágenes y audio
+# Capítulo 13 — Multimodalidad
+
+> Cómo enviar imágenes y audio al modelo, generar imágenes con DALL-E
+> y sintetizar voz con Text-to-Speech. Requiere modelos multimodales (GPT-4o, Claude 3, Gemini).
+
+## 13. Multimodalidad — imágenes y audio
 
 Spring AI soporta el envío de imágenes y audio al modelo (modelos multimodales como GPT-4o,
 Claude 3, Gemini).
@@ -62,7 +67,7 @@ public String transcribir(@RequestParam MultipartFile audio) throws IOException 
 
 ---
 
-## 18. Image Generation — generar imágenes
+## 13.2 Image Generation — generar imágenes
 
 ```java
 @Autowired
@@ -106,7 +111,7 @@ Prompt: "Un astronauta montando un caballo en Marte, estilo fotorrealista"
 
 
 
-## 19. Text-to-Speech (TTS) — texto a voz
+## 13.3 Text-to-Speech (TTS) — texto a voz
 
 Spring AI soporta la generación de audio a partir de texto (**TTS**) mediante `SpeechModel`.
 Disponible con OpenAI (`tts-1` y `tts-1-hd`).
@@ -255,6 +260,55 @@ Flujo completo:
 └──────────────────────────────────────────────┴───────────────────────────────┘
 ```
 
+## 13.4 Errores comunes
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES EN MULTIMODALIDAD                                        │
+├────────────────────────────────┬─────────────────────────────────────────────┤
+│  Error                         │  Causa y solución                           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  "Model does not support       │  Se está enviando imagen o audio a un       │
+│  vision" o respuesta sin       │  modelo que no es multimodal. GPT-3.5,     │
+│  interpretar la imagen         │  algunos modelos de Ollama, y versiones     │
+│                                │  antiguas de Claude no procesan imágenes.   │
+│                                │  ✅ Usar GPT-4o, GPT-4-turbo, Claude 3,    │
+│                                │  Gemini 1.5 o un modelo Ollama con visión   │
+│                                │  (llava, bakllava, moondream).              │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  TTS genera audio con          │  El texto de entrada contiene markdown:     │
+│  pronunciación extraña:        │  asteriscos (**texto**), backticks,         │
+│  "asterisco asterisco texto    │  corchetes de URLs, etc. TTS los lee        │
+│  asterisco asterisco"          │  literalmente como caracteres.              │
+│                                │  ✅ Añadir en el system prompt del LLM:     │
+│                                │  "Responde solo con texto plano, sin        │
+│                                │  markdown ni asteriscos."                   │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Error al enviar imagen:       │  La imagen supera el límite de tamaño de    │
+│  "Image too large" o           │  la API (OpenAI: máx. 20MB, pero en la     │
+│  respuesta lenta               │  práctica > 4MB es costoso y lento).        │
+│                                │  ✅ Redimensionar/comprimir antes de enviar.│
+│                                │  Para análisis de documentos, PDF → imagen  │
+│                                │  a 1024px de ancho es suficiente.           │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  DALL-E genera imagen que      │  El prompt es demasiado ambiguo o corto.   │
+│  no corresponde a lo pedido    │  DALL-E necesita prompts descriptivos y     │
+│                                │  específicos: estilo, composición, colores, │
+│                                │  iluminación, etc.                          │
+│                                │  ✅ En lugar de "un coche rojo", usar:      │
+│                                │  "Un Ferrari rojo brillante en la autopista │
+│                                │  al atardecer, fotorrealista, 8K, cielo     │
+│                                │  naranja de fondo."                         │
+├────────────────────────────────┼─────────────────────────────────────────────┤
+│  Transcripción de audio        │  Whisper puede transcribir varios idiomas,  │
+│  (Whisper) devuelve texto      │  pero sin especificar el idioma puede       │
+│  en el idioma incorrecto       │  detectar mal el idioma si hay mezcla o    │
+│  o con errores                 │  el audio tiene ruido.                      │
+│                                │  ✅ Especificar language("es") en las       │
+│                                │  opciones para forzar el idioma destino.    │
+└────────────────────────────────┴─────────────────────────────────────────────┘
+```
+
 ---
 
-> **[← Volver al índice](00_indice.md)**
+> **[← Advisors](12_advisors.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Observabilidad →](14_observabilidad.md)**

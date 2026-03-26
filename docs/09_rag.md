@@ -1,9 +1,14 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Vector Store](08_vector_store.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Tools →](10_tools.md)**
 
 ---
 
-## 13. RAG — Retrieval Augmented Generation
+# Capítulo 09 — RAG
+
+> La técnica más importante para aplicaciones empresariales con IA.
+> Permite que el modelo responda sobre tus propios datos sin alucinaciones.
+
+## 9. RAG — Retrieval Augmented Generation
 
 **RAG** es la técnica más importante de Spring AI para aplicaciones empresariales.
 Resuelve el problema más crítico de los LLMs en producción: **los modelos no conocen
@@ -218,6 +223,24 @@ respuesta coherente combinando la información. No inventa nada porque tiene la 
 
 ### Implementación completa de RAG
 
+> **📌 Dependencias adicionales:** `PagePdfDocumentReader` requiere un artefacto
+> separado que **no viene incluido** en los starters de chat o embeddings. Añade
+> según el tipo de documento que necesites leer:
+>
+> ```xml
+> <!-- Leer PDFs -->
+> <dependency>
+>     <groupId>org.springframework.ai</groupId>
+>     <artifactId>spring-ai-pdf-document-reader</artifactId>
+> </dependency>
+>
+> <!-- Leer HTML / web scraping -->
+> <dependency>
+>     <groupId>org.springframework.ai</groupId>
+>     <artifactId>spring-ai-jsoup-document-reader</artifactId>
+> </dependency>
+> ```
+
 ```java
 // PASO 1: Cargar y almacenar documentos
 @Service
@@ -268,9 +291,10 @@ public class RagChatService {
                 // QuestionAnswerAdvisor hace el RAG completo automáticamente
                 new QuestionAnswerAdvisor(
                     vectorStore,
-                    SearchRequest.defaults()
-                        .withTopK(5)                    // top 5 chunks más relevantes
-                        .withSimilarityThreshold(0.65)  // mínimo de similitud
+                    SearchRequest.builder()
+                        .topK(5)                    // top 5 chunks más relevantes
+                        .similarityThreshold(0.65)  // mínimo de similitud
+                        .build()
                 )
             )
             .build();
@@ -304,9 +328,10 @@ Esta sección es crítica. RAG parece no funcionar en muchos casos por razones c
 │  Diagnóstico — comprueba la similitud directamente:                          │
 │                                                                              │
 │  List<Document> chunks = vectorStore.similaritySearch(                       │
-│      SearchRequest.query("tu pregunta aquí")                                 │
-│          .withTopK(10)                                                       │
-│          .withSimilarityThreshold(0.0)   // sin umbral para ver todos        │
+│      SearchRequest.builder().query("tu pregunta aquí")                                 │
+│          .topK(10)                                                       │
+│          .similarityThreshold(0.0)   // sin umbral para ver todos        │
+│          .build()                                                        │
 │  );                                                                          │
 │  chunks.forEach(c ->                                                         │
 │      System.out.println("Similitud: " + c.getScore()                        │
@@ -317,7 +342,7 @@ Esta sección es crítica. RAG parece no funcionar en muchos casos por razones c
 │  → Estás usando un modelo de embedding distinto al de indexación             │
 │                                                                              │
 │  SOLUCIONES:                                                                 │
-│  ✅ Baja el threshold: .withSimilarityThreshold(0.5)  (era 0.7)             │
+│  ✅ Baja el threshold: .similarityThreshold(0.5)  (era 0.7)             │
 │  ✅ Verifica que usas el mismo EmbeddingModel en indexación y búsqueda       │
 │  ✅ Re-indexa los documentos                                                  │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -331,7 +356,7 @@ Esta sección es crítica. RAG parece no funcionar en muchos casos por razones c
 │  ✅ Añade en el system prompt: "SOLO responde con la información del          │
 │     contexto proporcionado. Si no está en el contexto, di que no tienes     │
 │     esa información. Nunca uses tu conocimiento general."                    │
-│  ✅ Aumenta topK: .withTopK(10)  (estaba en 3)                               │
+│  ✅ Aumenta topK: .topK(10)  (estaba en 3)                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -340,8 +365,8 @@ Esta sección es crítica. RAG parece no funcionar en muchos casos por razones c
 │  Síntoma: la respuesta combina partes de documentos no relacionados          │
 │                                                                              │
 │  SOLUCIÓN: usar filtros de metadata para acotar la búsqueda                  │
-│  SearchRequest.query(consulta)                                               │
-│      .withFilterExpression("filename == '" + nombreDoc + "'")                │
+│  SearchRequest.builder().query(consulta)                                     │
+│      .filterExpression("filename == '" + nombreDoc + "'").build()        │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -416,7 +441,4 @@ new GithubDocumentReader(token, "usuario/repo")
 
 ---
 
-
----
-
-> **[← Volver al índice](00_indice.md)**
+> **[← Vector Store](08_vector_store.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Tools →](10_tools.md)**
