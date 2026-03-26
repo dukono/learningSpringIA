@@ -48,8 +48,8 @@ NIVEL AVANZADO (casos de uso especializados)
 ─────────────────────────────────────────────────────────────────────────
   Cap. 13 → Multimodalidad — imágenes, audio, video
   Cap. 14 → Observabilidad — métricas, trazas, logs
-  Cap. 17 → Generación de imágenes — DALL-E y Stable Diffusion
-  Cap. 18 → Audio — transcripción y síntesis de voz
+  Cap. 17 → Generación de imágenes — DALL-E y Stable Diffusion  (→ ver Cap. 13)
+  Cap. 18 → Audio — transcripción y síntesis de voz            (→ ver Cap. 13)
 
 NIVEL PROFESIONAL (producción y calidad)
 ─────────────────────────────────────────────────────────────────────────
@@ -90,8 +90,8 @@ NIVEL PROFESIONAL (producción y calidad)
 |---|---|---|
 | [13](13_multimodalidad.md) | Multimodalidad | Imágenes en el prompt, análisis visual, audio, modelos multimodales |
 | [14](14_observabilidad.md) | Observabilidad | Micrometer, trazas, métricas de tokens, logs estructurados |
-| [17](17_image_generation.md) | Generación de imágenes | DALL-E, Stable Diffusion, ImageModel, tamaños y calidades |
-| [18](18_audio.md) | Audio — transcripción y TTS | Whisper, Text-to-Speech, SpeechModel, AudioTranscriptionModel |
+| [17](13_multimodalidad.md) | Generación de imágenes | DALL-E, Stable Diffusion, ImageModel, tamaños y calidades |
+| [18](13_multimodalidad.md) | Audio — transcripción y TTS | Whisper, Text-to-Speech, SpeechModel, AudioTranscriptionModel |
 
 ### Producción y referencia
 

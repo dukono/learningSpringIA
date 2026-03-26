@@ -1,46 +1,20 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Inicio](00_indice.md)** | **[Siguiente: Setup y entornos →](02_setup_y_entornos.md)**
 
 ---
 
-# 🤖 Spring AI — Guía Completa y Didáctica
+# Capítulo 01 — Introducción a Spring AI
 
-Guía orientada a desarrolladores Java/Spring Boot que quieren entender e implementar
-inteligencia artificial en sus aplicaciones usando el ecosistema Spring que ya conocen.
+> Este capítulo explica qué es Spring AI, por qué usarlo, su arquitectura interna
+> y los conceptos fundamentales que debes dominar antes de escribir una línea de código.
+> **Sin estos fundamentos el resto de la guía no tiene contexto.**
 
----
-
-## Índice
+## Contenido de este capítulo
 
 1. [¿Qué es Spring AI?](#1-qué-es-spring-ai)
 2. [¿Por qué Spring AI y no llamar a la API directamente?](#2-por-qué-spring-ai-y-no-llamar-a-la-api-directamente)
 3. [Arquitectura y conceptos clave](#3-arquitectura-y-conceptos-clave)
 4. [Modelos de IA soportados](#4-modelos-de-ia-soportados)
-5. [Setup del proyecto](#5-setup-del-proyecto)
-6. [ChatClient — el núcleo de Spring AI](#6-chatclient--el-núcleo-de-spring-ai)
-7. [Prompts — cómo hablarle a la IA](#7-prompts--cómo-hablarle-a-la-ia)
-8. [PromptTemplate — prompts dinámicos](#8-prompttemplate--prompts-dinámicos)
-9. [Structured Output — respuestas tipadas](#9-structured-output--respuestas-tipadas)
-10. [Streaming — respuesta en tiempo real](#10-streaming--respuesta-en-tiempo-real)
-11. [Embeddings — convertir texto en vectores](#11-embeddings--convertir-texto-en-vectores)
-12. [Vector Store — base de datos para IA](#12-vector-store--base-de-datos-para-ia)
-13. [RAG — Retrieval Augmented Generation](#13-rag--retrieval-augmented-generation)
-14. [Tools — la IA ejecuta tu código (API 1.1.0)](#14-tools--la-ia-ejecuta-tu-código-api-110)
-    - 14.1 [¿Cuándo decide el modelo usar un Tool?](#141-cuándo-decide-el-modelo-usar-un-tool)
-    - 14.2 [API nueva con @Tool (Spring AI 1.1.0)](#142-api-nueva-con-tool-spring-ai-110)
-    - 14.3 [API antigua con @Bean + Function<> (compatible)](#143-api-antigua-con-bean--function-compatible)
-    - 14.4 [Tools encadenadas](#144-tools-encadenadas)
-    - 14.5 [Seguridad en Tools](#145-seguridad-en-tools)
-14.5 [Retry automático — reintentos ante fallos de la IA](#145-retry-automático--reintentos-ante-fallos-de-la-ia)
-15. [Memory / Conversation History — contexto de conversación](#15-memory--conversation-history--contexto-de-conversación)
-16. [Advisors — middleware de IA](#16-advisors--middleware-de-ia)
-17. [Multimodalidad — imágenes y audio](#17-multimodalidad--imágenes-y-audio)
-18. [Image Generation — generar imágenes](#18-image-generation--generar-imágenes)
-19. [Observabilidad y métricas](#19-observabilidad-y-métricas)
-20. [Proyecto completo real — Chatbot con RAG](#20-proyecto-completo-real--chatbot-con-rag)
-21. [Comparativa Spring AI vs otras librerías](#21-comparativa-spring-ai-vs-otras-librerías)
-22. [Cheatsheet rápido](#22-cheatsheet-rápido)
-23. [Configuración por entornos — dev (Ollama local) vs prod (OpenAI)](#23-configuración-por-entornos--dev-ollama-local-vs-prod-openai)
 
 ---
 
@@ -306,4 +280,4 @@ Spring AI soporta múltiples proveedores con el mismo código:
 
 ---
 
-> **[← Volver al índice](00_indice.md)**
+> **[← Inicio](00_indice.md)** | **[Siguiente: Setup y entornos →](02_setup_y_entornos.md)**
