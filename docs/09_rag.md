@@ -417,6 +417,104 @@ de los casos. Para casos más exigentes existe **RAG avanzado**:
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### RetrievalAugmentationAdvisor — la API modular de RAG (1.1.x)
+
+`QuestionAnswerAdvisor` es el advisor de RAG clásico y funciona bien para la mayoría
+de casos. Spring AI 1.1.x introduce `RetrievalAugmentationAdvisor` como su evolución
+más modular y composable, donde **el retriever es una pieza intercambiable**:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  QuestionAnswerAdvisor (clásico)                                             │
+│  → VectorStore acoplado directamente dentro del advisor                      │
+│  → Menos flexible para escenarios avanzados                                  │
+│                                                                              │
+│  RetrievalAugmentationAdvisor (modular, 1.1.x)                              │
+│  → DocumentRetriever como interfaz separada e inyectable                     │
+│  → VectorStoreDocumentRetriever como implementación por defecto              │
+│  → Permite custom retrievers (BDD, API externa, ficheros, etc.)              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Uso básico — equivalente a QuestionAnswerAdvisor
+
+```java
+// VectorStoreDocumentRetriever envuelve el VectorStore con SearchRequest configurable
+DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
+    .vectorStore(vectorStore)
+    .searchRequest(SearchRequest.builder()
+        .topK(5)
+        .similarityThreshold(0.65)
+        .build())
+    .build();
+
+ChatClient chatClient = builder
+    .defaultAdvisors(
+        RetrievalAugmentationAdvisor.builder()
+            .documentRetriever(retriever)
+            .build()
+    )
+    .build();
+
+// El uso es idéntico al de QuestionAnswerAdvisor
+String respuesta = chatClient.prompt()
+    .user("¿Cómo configuro JWT?")
+    .call()
+    .content();
+```
+
+#### DocumentRetriever custom — recuperar desde fuente propia
+
+La ventaja clave: puedes implementar `DocumentRetriever` para recuperar documentos
+desde **cualquier fuente**, no solo un VectorStore:
+
+```java
+// Retriever custom — recupera desde tu propio sistema
+@Component
+public class JiraDocumentRetriever implements DocumentRetriever {
+
+    @Autowired JiraClient jiraClient;
+
+    @Override
+    public List<Document> retrieve(String query) {
+        // Buscar tickets de Jira relacionados con la consulta
+        List<JiraIssue> issues = jiraClient.search("text ~ \"" + query + "\"", 5);
+        return issues.stream()
+            .map(issue -> new Document(
+                issue.getSummary() + "\n" + issue.getDescription(),
+                Map.of("jiraKey", issue.getKey(), "status", issue.getStatus())
+            ))
+            .toList();
+    }
+}
+
+// Usar el retriever custom en el advisor
+ChatClient chatClient = builder
+    .defaultAdvisors(
+        RetrievalAugmentationAdvisor.builder()
+            .documentRetriever(jiraDocumentRetriever)
+            .build()
+    )
+    .build();
+```
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  QuestionAnswerAdvisor vs RetrievalAugmentationAdvisor                       │
+├──────────────────────────────┬───────────────────────────────────────────────┤
+│  QuestionAnswerAdvisor       │  Más simple. Toma VectorStore + SearchRequest. │
+│                              │  Suficiente para el 80% de los casos.         │
+│  RetrievalAugmentationAdvisor│  Más modular. DocumentRetriever intercambiable.│
+│                              │  Usa cuando necesitas fuente de datos custom.  │
+└──────────────────────────────┴───────────────────────────────────────────────┘
+```
+
+> 💡 Si solo tienes un VectorStore estándar, `QuestionAnswerAdvisor` sigue siendo
+> la opción más directa. Usa `RetrievalAugmentationAdvisor` cuando el origen de los
+> documentos de contexto sea algo distinto a un VectorStore de Spring AI.
+
+---
+
 ### Query Rewriting — ejemplo con código
 
 La técnica más práctica del RAG avanzado. Antes de buscar en el vector store,
@@ -623,7 +721,7 @@ public class LimpiezaHtmlTransformer implements DocumentTransformer {
         return docs.stream()
             .map(doc -> {
                 // Limpiar etiquetas HTML del contenido
-                String textoLimpio = doc.getText()
+                String textoLimpio = doc.getContent()
                     .replaceAll("<[^>]+>", " ")     // eliminar etiquetas
                     .replaceAll("\\s+", " ")         // normalizar espacios
                     .trim();
@@ -635,7 +733,7 @@ public class LimpiezaHtmlTransformer implements DocumentTransformer {
 
                 return new Document(textoLimpio, metadata);
             })
-            .filter(doc -> doc.getText().length() > 100)  // descartar fragmentos muy cortos
+            .filter(doc -> doc.getContent().length() > 100)  // descartar fragmentos muy cortos
             .toList();
     }
 }

@@ -93,10 +93,22 @@ builder.defaultAdvisors(
 ### 12.4 Advisors integrados en Spring AI
 
 ```java
-// 1. QuestionAnswerAdvisor — hace RAG automáticamente
-//    ANTES: convierte la pregunta en vector, busca en vectorStore, añade chunks al prompt
-//    DESPUÉS: (nada adicional)
-new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults())
+// 1a. QuestionAnswerAdvisor — hace RAG automáticamente (API clásica)
+//     ANTES: convierte la pregunta en vector, busca en vectorStore, añade chunks al prompt
+//     DESPUÉS: (nada adicional)
+new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build())
+
+// 1b. RetrievalAugmentationAdvisor — API modular de RAG (1.1.x, recomendada)
+//     Igual que QuestionAnswerAdvisor pero con DocumentRetriever intercambiable.
+//     Permite usar fuentes de datos distintas a un VectorStore (BBDD, API, ficheros...).
+RetrievalAugmentationAdvisor.builder()
+    .documentRetriever(
+        VectorStoreDocumentRetriever.builder()
+            .vectorStore(vectorStore)
+            .searchRequest(SearchRequest.builder().topK(5).build())
+            .build()
+    )
+    .build()
 
 // 2. MessageChatMemoryAdvisor — añade historial de conversación como mensajes
 //    ANTES: recupera historial del ChatMemory y lo añade como mensajes [USER]/[ASSISTANT]

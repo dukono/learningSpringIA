@@ -351,11 +351,13 @@ public class TestAiConfig {
 
 ```
 AiException  (raíz)
-├── NonTransientAiException      → NO reintentar (error 400, parámetro inválido)
-│   ├── InvalidInputException    → Input mal formado
-│   └── ModelOutputException     → La respuesta del modelo no se pudo parsear
-└── TransientAiException         → SÍ reintentar (rate limit, error 429, timeout)
-    └── RateLimitException       → Límite de peticiones por minuto alcanzado
+├── NonTransientAiException         → NO reintentar (error permanente)
+│   ├── BadRequestException         → Petición mal formada (parámetros inválidos, 400)
+│   ├── AuthenticationException     → API key inválida o sin permisos (401/403)
+│   └── ContentFilterException      → Contenido bloqueado por políticas del proveedor
+└── TransientAiException            → SÍ reintentar (error temporal)
+    ├── RateLimitException          → Límite de peticiones alcanzado (429)
+    └── ModelNotAvailableException  → Modelo no disponible temporalmente (503)
 ```
 
 ---

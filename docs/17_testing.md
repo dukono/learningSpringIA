@@ -3,12 +3,12 @@
 
 ---
 
-# Capítulo 19 — Testing con Spring AI
+# Capítulo 17 — Testing con Spring AI
 
 > Cómo escribir tests unitarios e integración para servicios que usan ChatClient,
 > VectorStore, Advisors y Tools, sin llamar a APIs reales en los tests.
 
-## 19.1 El problema — ¿por qué es diferente testear con IA?
+## 17.1 El problema — ¿por qué es diferente testear con IA?
 
 Testear servicios que usan IA tiene retos que no existen con una base de datos o un
 REST client convencional:
@@ -39,7 +39,7 @@ REST client convencional:
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 19.2 Cómo funciona internamente — qué mockear y por qué
+## 17.2 Cómo funciona internamente — qué mockear y por qué
 
 La clave es entender la jerarquía de Spring AI para saber **en qué capa mockear**:
 
@@ -91,7 +91,7 @@ ChatClient se construye desde el mock de ChatModel → comportamiento real del c
 </dependencies>
 ```
 
-## 19.3 Ejemplo mínimo — test unitario con MockChatModel
+## 17.3 Ejemplo mínimo — test unitario con MockChatModel
 
 `MockChatModel` del artefacto `spring-ai-test` devuelve respuestas predefinidas
 sin llamar a ninguna API.
@@ -155,7 +155,7 @@ class ResumenServiceTest {
 > respuestas distintas en llamadas sucesivas:
 > `new MockChatModel(List.of("primera", "segunda", "tercera"))`
 
-## 19.4 @TestConfiguration — inyectar ChatClient de test en el contexto de Spring
+## 17.4 @TestConfiguration — inyectar ChatClient de test en el contexto de Spring
 
 Para tests con `@SpringBootTest` que cargan el contexto completo, usa
 `@TestConfiguration` para sustituir el `ChatModel` real por uno mock:
@@ -279,7 +279,7 @@ class StreamingChatServiceTest {
 }
 ```
 
-## 19.5 Testear Advisors custom
+## 17.5 Testear Advisors custom
 
 Un advisor custom se puede testear directamente sin levantar el contexto de Spring,
 instanciando la cadena manualmente:
@@ -314,18 +314,20 @@ class AuditAdvisorTest {
         AuditAdvisor advisor = new AuditAdvisor();
         ReflectionTestUtils.setField(advisor, "auditRepo", mockRepo);
 
-        // Simular la cadena de advisors con un modelo mock
+        // AdvisedRequest con la API pública del builder
         ChatModel mockModel = new MockChatModel("respuesta de test");
         AdvisedRequest request = AdvisedRequest.builder()
-            .chatClient(ChatClient.builder(mockModel).build())
+            .chatModel(mockModel)          // ← chatModel, no chatClient (API pública)
             .userText("pregunta de test")
             .build();
 
-        // Cadena real con el advisor bajo test
-        DefaultCallAroundAdvisorChain chain =
-            DefaultCallAroundAdvisorChain.builder(mockModel).build();
+        // Mockear la INTERFAZ pública CallAroundAdvisorChain, no la clase interna
+        CallAroundAdvisorChain mockChain = mock(CallAroundAdvisorChain.class);
+        AdvisedResponse fakeResponse = new AdvisedResponse(
+            mockModel.call(new Prompt("pregunta de test")), Map.of());
+        when(mockChain.nextAroundCall(any())).thenReturn(fakeResponse);
 
-        advisor.aroundCall(request, chain);
+        advisor.aroundCall(request, mockChain);
 
         // Verificar que guardó la auditoría
         verify(mockRepo, times(1)).save(any(AuditLog.class));
@@ -333,7 +335,7 @@ class AuditAdvisorTest {
 }
 ```
 
-## 19.6 Testear Tools (@Tool)
+## 17.6 Testear Tools (@Tool)
 
 Los métodos anotados con `@Tool` son métodos Java normales — se testean como
 cualquier método de negocio, sin necesidad de Spring AI en el test:
@@ -389,7 +391,7 @@ class WeatherToolsTest {
 > ✅ **Buena práctica**: testear los tools de forma aislada garantiza que la lógica
 > de negocio es correcta independientemente de cuándo el modelo decida llamarlos.
 
-## 19.7 Tests de integración con TestContainers — VectorStore real
+## 17.7 Tests de integración con TestContainers — VectorStore real
 
 Para testear el `VectorStore` con pgvector necesitas una base de datos real.
 TestContainers levanta un PostgreSQL+pgvector en Docker durante el test:
@@ -476,7 +478,7 @@ spring:
 
 ---
 
-## 19.8 Errores comunes en testing
+## 17.8 Errores comunes en testing
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐

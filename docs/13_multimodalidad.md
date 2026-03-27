@@ -232,8 +232,8 @@ public String transcribir(@RequestParam MultipartFile audio) throws IOException 
     AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(
         new ByteArrayResource(audio.getBytes()),
         OpenAiAudioTranscriptionOptions.builder()
-            .withLanguage("es")
-            .withModel("whisper-1")
+            .language("es")
+            .model("whisper-1")
             .build()
     );
 
@@ -254,12 +254,12 @@ public String generarImagen(@RequestParam String descripcion) {
     ImagePrompt prompt = new ImagePrompt(
         descripcion,
         OpenAiImageOptions.builder()
-            .withModel("dall-e-3")
-            .withQuality("hd")
-            .withN(1)                    // número de imágenes
-            .withHeight(1024)
-            .withWidth(1024)
-            .withStyle("vivid")          // "vivid" o "natural"
+            .model("dall-e-3")
+            .quality("hd")
+            .n(1)                        // número de imágenes
+            .height(1024)
+            .width(1024)
+            .style("vivid")              // "vivid" o "natural"
             .build()
     );
 
@@ -350,11 +350,11 @@ public class VoiceService {
         SpeechPrompt prompt = new SpeechPrompt(
             texto,
             OpenAiAudioSpeechOptions.builder()
-                .withModel("tts-1")         // tts-1 = rápido, tts-1-hd = calidad
-                .withVoice(OpenAiAudioApi.SpeechRequest.Voice.NOVA)
-                .withResponseFormat(
+                .model("tts-1")             // tts-1 = rápido, tts-1-hd = calidad
+                .voice(OpenAiAudioApi.SpeechRequest.Voice.NOVA)
+                .responseFormat(
                     OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-                .withSpeed(1.0f)            // 0.25 (muy lento) a 4.0 (muy rápido)
+                .speed(1.0f)                // 0.25 (muy lento) a 4.0 (muy rápido)
                 .build()
         );
         return speechModel.call(prompt).getResult().getOutput(); // byte[] con MP3
@@ -395,8 +395,8 @@ public ResponseEntity<byte[]> responderConVoz(@RequestBody String pregunta) {
     byte[] audio = speechModel.call(new SpeechPrompt(
         respuestaTexto,
         OpenAiAudioSpeechOptions.builder()
-            .withModel("tts-1-hd")
-            .withVoice(OpenAiAudioApi.SpeechRequest.Voice.NOVA)
+            .model("tts-1-hd")
+            .voice(OpenAiAudioApi.SpeechRequest.Voice.NOVA)
             .build()
     )).getResult().getOutput();
 

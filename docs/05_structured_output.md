@@ -122,7 +122,7 @@ Entender lo que ocurre internamente es fundamental para diagnosticar problemas.
 │  ObjectMapper.readValue(respuesta, MiClase.class)                            │
 │  → objeto Java tipado listo para usar                                        │
 │                                                                              │
-│  Si el modelo no devuelve JSON válido → lanza OutputParserException  │
+│  Si el modelo no devuelve JSON válido → lanza RuntimeException (Jackson)     │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
