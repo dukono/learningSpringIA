@@ -52,6 +52,7 @@ NIVEL AVANZADO (casos de uso especializados)
 NIVEL PROFESIONAL (producción y calidad)
 ─────────────────────────────────────────────────────────────────────────
   Cap. 17 → Testing — pruebas unitarias e integración con Spring AI
+  Cap. 18 → Evaluación RAG — calidad de respuestas con evaluadores LLM
   Cap. 15 → Proyecto completo — chatbot empresarial real
   Cap. 16 → Comparativa, cheatsheet y referencia rápida
 ```
@@ -94,8 +95,9 @@ NIVEL PROFESIONAL (producción y calidad)
 | Capítulo | Título | Qué aprenderás |
 |---|---|---|
 | [17](docs/17_testing.md) | Testing con Spring AI | MockChatModel, @TestConfiguration, TestContainers con pgvector, testear advisors y tools |
+| [18](docs/18_evaluacion_rag.md) | Evaluación de respuestas RAG | RelevancyEvaluator, FaithfulnessEvaluator, EvaluationRequest, suite de evaluación automática |
 | [15](docs/15_proyecto_completo.md) | Proyecto completo | Chatbot empresarial real: RAG + Tools + Memory + Streaming + Observabilidad |
-| [16](docs/16_comparativa_y_cheatsheet.md) | Comparativa y cheatsheet | Spring AI vs alternativas, tabla de decisión, referencia rápida |
+| [16](docs/16_comparativa_y_cheatsheet.md) | Comparativa y cheatsheet | Spring AI vs alternativas, jerarquía de clases, tabla de decisión, referencia rápida |
 
 ---
 
@@ -125,6 +127,8 @@ NIVEL PROFESIONAL (producción y calidad)
 │                              │                                          │  │ │
 │                              ▼                                          │  │ │
 │  [13 Multimodalidad]    [14 Observabilidad]    [17 Testing]             │  │ │
+│                                                      │                  │  │ │
+│                                               [18 Eval. RAG]           │  │ │
 │                              │                                          │  │ │
 │                              ▼                                          ▼  ▼ │
 │                     [15 Proyecto Completo] ◄────────────────────────────┘  │ │

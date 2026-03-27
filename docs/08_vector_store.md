@@ -226,6 +226,222 @@ List<Document> resultados = vectorStore.similaritySearch(
 > distintos departamentos o distintos proyectos, los filtros evitan que la IA mezcle
 > información de unos con otros. Esencial para aplicaciones B2B.
 
+## 8.3 Gestión del ciclo de vida de documentos
+
+Más allá de añadir documentos, en producción necesitas **actualizar y eliminar** los documentos
+ya indexados:
+
+```java
+@Service
+public class DocumentLifecycleService {
+
+    @Autowired VectorStore vectorStore;
+
+    // ELIMINAR documentos por ID
+    public void eliminar(List<String> ids) {
+        vectorStore.delete(ids);
+    }
+
+    // ACTUALIZAR un documento: eliminar el viejo y añadir el nuevo
+    // VectorStore no tiene update() — la actualización es delete + add
+    public void actualizar(String idViejo, Document docNuevo) {
+        vectorStore.delete(List.of(idViejo));
+        vectorStore.add(List.of(docNuevo));
+    }
+
+    // ELIMINAR todos los documentos de un archivo (usando metadata)
+    // Recupera primero los IDs con similaritySearch y luego elimina
+    public void eliminarPorArchivo(String filename) {
+        List<Document> docs = vectorStore.similaritySearch(
+            SearchRequest.builder()
+                .query("")          // query vacía para buscar por filtro solo
+                .topK(1000)         // máximo documentos del archivo
+                .filterExpression("filename == '" + filename + "'")
+                .build()
+        );
+        List<String> ids = docs.stream().map(Document::getId).toList();
+        if (!ids.isEmpty()) vectorStore.delete(ids);
+    }
+}
+```
+
+> 💡 `Document.getId()` devuelve el UUID asignado al insertar. Si quieres recuperar ese
+> ID para usarlo después, guárdalo en tu propia base de datos al hacer `vectorStore.add()`.
+
+## 8.4 FilterExpression — búsqueda filtrada por metadata
+
+`FilterExpression` es el lenguaje de filtros de Spring AI para buscar solo en documentos
+que cumplan ciertas condiciones de metadata. Es clave en aplicaciones multi-tenant o con
+documentos de distintas categorías.
+
+### ¿Qué metadata puede filtrarse?
+
+Solo la metadata que **tú añadiste explícitamente** al crear el `Document`:
+
+```java
+// Añadir metadata al crear documentos
+Document doc = new Document(
+    "Contenido del documento...",
+    Map.of(
+        "filename",    "politica-devoluciones.pdf",
+        "department",  "RRHH",
+        "year",        2025,
+        "confidential", false,
+        "tags",        List.of("política", "devoluciones")
+    )
+);
+```
+
+### Sintaxis completa de FilterExpression
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  OPERADORES DE COMPARACIÓN                                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  ==   igual                  filename == 'informe.pdf'                       │
+│  !=   distinto               department != 'RRHH'                            │
+│  >    mayor que              year > 2023                                     │
+│  >=   mayor o igual          year >= 2024                                    │
+│  <    menor que              year < 2026                                     │
+│  <=   menor o igual          priority <= 3                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  OPERADORES LÓGICOS                                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  &&   AND                    department == 'RRHH' && year >= 2024            │
+│  ||   OR                     department == 'RRHH' || department == 'Legal'   │
+│  !    NOT                    !(confidential == true)                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  OPERADORES DE COLECCIÓN                                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  in     valor en lista       department in ['RRHH', 'Legal', 'Finanzas']     │
+│  nin    valor NO en lista    status nin ['borrador', 'obsoleto']             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+Notas de sintaxis:
+  - Strings entre comillas simples: 'valor'
+  - Números sin comillas: year >= 2024
+  - Listas entre corchetes: ['a', 'b', 'c']
+  - Booleanos sin comillas: confidential == true
+```
+
+### Ejemplos de FilterExpression en código
+
+```java
+// Caso 1: filtro simple — solo documentos de un archivo
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("¿Cuál es la política de vacaciones?")
+        .topK(5)
+        .filterExpression("filename == 'politica-vacaciones.pdf'")
+        .build()
+);
+
+// Caso 2: filtro compuesto — departamento Y año reciente
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("procedimientos de contratación")
+        .topK(5)
+        .filterExpression("department == 'RRHH' && year >= 2024")
+        .build()
+);
+
+// Caso 3: filtro con lista — varios departamentos permitidos
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("normativa de gastos")
+        .topK(5)
+        .filterExpression("department in ['Finanzas', 'Dirección']")
+        .build()
+);
+
+// Caso 4: excluir documentos obsoletos
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("proceso de incorporación")
+        .topK(5)
+        .filterExpression("status nin ['borrador', 'obsoleto'] && year >= 2023")
+        .build()
+);
+```
+
+### FilterExpressionBuilder — construcción programática
+
+Cuando el filtro se construye dinámicamente (por ejemplo, basado en el rol del usuario),
+usa `FilterExpressionBuilder` en lugar de concatenar strings:
+
+```java
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
+
+@Service
+public class RagService {
+
+    @Autowired VectorStore vectorStore;
+
+    public List<Document> buscarConFiltrosDinamicos(
+            String consulta, String userId, List<String> departamentosPermitidos) {
+
+        FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+        // Construir filtro basado en el perfil del usuario
+        Expression filtro = b.and(
+            b.in("department", departamentosPermitidos),   // solo sus departamentos
+            b.eq("tenantId", userId),                      // aislamiento multi-tenant
+            b.gte("year", 2024)                            // solo documentos recientes
+        );
+
+        return vectorStore.similaritySearch(
+            SearchRequest.builder()
+                .query(consulta)
+                .topK(5)
+                .similarityThreshold(0.65)
+                .filterExpression(filtro)
+                .build()
+        );
+    }
+}
+```
+
+**Métodos de `FilterExpressionBuilder`:**
+
+```java
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+b.eq("campo", "valor")          // campo == 'valor'
+b.ne("campo", "valor")          // campo != 'valor'
+b.gt("campo", 100)              // campo > 100
+b.gte("campo", 100)             // campo >= 100
+b.lt("campo", 100)              // campo < 100
+b.lte("campo", 100)             // campo <= 100
+b.in("campo", List.of("a","b")) // campo in ['a', 'b']
+b.nin("campo", List.of("a","b"))// campo nin ['a', 'b']
+b.and(expr1, expr2)             // expr1 && expr2
+b.or(expr1, expr2)              // expr1 || expr2
+b.not(expr)                     // !(expr)
+```
+
+> ⚠️ **Usar `FilterExpressionBuilder` en lugar de strings**: concatenar el filtro como
+> string desde input del usuario es vulnerable a injection. Úsalo siempre que el filtro
+> incluya valores dinámicos no controlados.
+
+### Soporte por vector store
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  SOPORTE DE FILTEREXPRESSION POR PROVEEDOR                                   │
+├───────────────────────┬──────────────────────────────────────────────────────┤
+│  pgvector             │  ✅ Completo — traduce a WHERE sobre columna metadata │
+│  SimpleVectorStore    │  ✅ Completo — filtra en memoria                      │
+│  Chroma               │  ✅ Completo                                          │
+│  Pinecone             │  ✅ Parcial — no soporta OR entre campos distintos    │
+│  Redis                │  ✅ Completo                                          │
+│  Weaviate             │  ✅ Completo                                          │
+└───────────────────────┴──────────────────────────────────────────────────────┘
+
+Nota: el filtro se traduce al lenguaje nativo del proveedor. El mismo código Java
+funciona con todos los stores — Spring AI hace la traducción internamente.
+```
+
 ## Errores comunes con Vector Store
 
 ```

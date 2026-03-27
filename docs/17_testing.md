@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Proyecto completo](15_proyecto_completo.md)** | **[← Inicio](../README.md)** | **[Siguiente: Comparativa →](16_comparativa_y_cheatsheet.md)**
+> **[← Proyecto completo](15_proyecto_completo.md)** | **[← Inicio](../README.md)** | **[Siguiente: Evaluación RAG →](18_evaluacion_rag.md)**
 
 ---
 
@@ -523,7 +523,7 @@ spring:
 
 ---
 
-> **[← Proyecto completo](15_proyecto_completo.md)** | **[← Inicio](../README.md)** | **[Siguiente: Comparativa →](16_comparativa_y_cheatsheet.md)**
+> **[← Proyecto completo](15_proyecto_completo.md)** | **[← Inicio](../README.md)** | **[Siguiente: Evaluación RAG →](18_evaluacion_rag.md)**
 
 
 

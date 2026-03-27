@@ -517,17 +517,157 @@ new PagePdfDocumentReader("classpath:documento.pdf")
 // Texto plano
 new TextReader("classpath:faq.txt")
 
-// Markdown
+// Markdown (requiere spring-ai-markdown-document-reader)
 new MarkdownDocumentReader("classpath:wiki.md")
 
-// HTML (extrae texto del HTML)
-new JsoupDocumentReader("https://docs.spring.io/spring-ai/docs/current/reference/html/")
+// HTML, extrae texto del HTML (requiere spring-ai-jsoup-document-reader)
+new JsoupDocumentReader("classpath:pagina.html")
 
 // JSON
 new JsonDocumentReader("classpath:data.json")
+```
 
-// GitHub repositorio entero
-new GithubDocumentReader(token, "usuario/repo")
+> ⚠️ `GithubDocumentReader` requiere el artefacto `spring-ai-github-document-reader`
+> y autenticación con token de GitHub. No está disponible en el starter estándar.
+
+---
+
+### 9.X DocumentTransformer — enriquecimiento de documentos antes de indexar
+
+`DocumentTransformer` es la interfaz de Spring AI para **transformar documentos entre
+el paso de lectura y el de indexación**. Un transformador recibe una lista de documentos
+y devuelve una lista (posiblemente diferente) de documentos modificados.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  PIPELINE DE INGESTA COMPLETO CON TRANSFORMADORES                             │
+│                                                                              │
+│  [DocumentReader]                                                            │
+│       │  Lee el fichero — devuelve List<Document> sin procesar               │
+│       ▼                                                                      │
+│  [DocumentTransformer 1: KeywordMetadataEnricher]                            │
+│       │  Usa el LLM para extraer keywords y añadirlas como metadata          │
+│       ▼                                                                      │
+│  [DocumentTransformer 2: SummaryMetadataEnricher]                            │
+│       │  Usa el LLM para generar un resumen del documento y añadirlo         │
+│       ▼                                                                      │
+│  [DocumentTransformer 3: TokenTextSplitter]                                  │
+│       │  Divide en chunks de ~400 tokens (también es un DocumentTransformer) │
+│       ▼                                                                      │
+│  [VectorStore.add()]                                                         │
+│       Genera embeddings e indexa                                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+El resultado: cada chunk en el vector store tiene metadata enriquecida con
+keywords y resumen, lo que mejora significativamente la calidad del RAG.
+```
+
+#### KeywordMetadataEnricher
+
+Usa el LLM para extraer palabras clave de cada documento y añadirlas como metadata.
+Mejora la búsqueda cuando la pregunta usa términos relacionados pero no idénticos al texto.
+
+```java
+@Service
+public class EnrichedIngestionService {
+
+    @Autowired VectorStore vectorStore;
+    @Autowired ChatModel  chatModel;   // usado internamente por los enrichers
+
+    public void ingestarConEnriquecimiento(String rutaPDF) {
+        // 1. Leer
+        List<Document> docs = new PagePdfDocumentReader(rutaPDF).get();
+
+        // 2. Enriquecer con keywords (llama al LLM por cada documento)
+        KeywordMetadataEnricher keywordEnricher = new KeywordMetadataEnricher(chatModel, 5);
+        List<Document> docsConKeywords = keywordEnricher.apply(docs);
+        // Resultado: cada doc.metadata ahora tiene "excerpt_keywords": "JWT, Spring Security,
+        //            autenticación, token, autorización"
+
+        // 3. Enriquecer con resumen (llama al LLM por cada documento)
+        SummaryMetadataEnricher summaryEnricher = new SummaryMetadataEnricher(
+            chatModel,
+            List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT)
+            // PREVIOUS: resumen del chunk anterior (contexto)
+            // CURRENT:  resumen de este chunk
+            // NEXT:     resumen del siguiente chunk (anticipo)
+        );
+        List<Document> docsConResumen = summaryEnricher.apply(docsConKeywords);
+        // Resultado: metadata también tiene "section_summary": "Este fragmento describe
+        //            cómo configurar JWT en Spring Security 6..."
+
+        // 4. Dividir en chunks
+        List<Document> chunks = new TokenTextSplitter().apply(docsConResumen);
+
+        // 5. Indexar
+        vectorStore.add(chunks);
+    }
+}
+```
+
+> ⚠️ `KeywordMetadataEnricher` y `SummaryMetadataEnricher` hacen **una llamada al LLM
+> por cada documento**. Con 100 PDFs de 10 páginas cada uno → 1000 llamadas al LLM.
+> Tenlo en cuenta para planificar el coste y el tiempo de ingesta.
+
+#### DocumentTransformer custom
+
+Si necesitas lógica de transformación propia (limpiar HTML, traducir, filtrar páginas),
+implementa `DocumentTransformer`:
+
+```java
+@Component
+public class LimpiezaHtmlTransformer implements DocumentTransformer {
+
+    @Override
+    public List<Document> apply(List<Document> docs) {
+        return docs.stream()
+            .map(doc -> {
+                // Limpiar etiquetas HTML del contenido
+                String textoLimpio = doc.getText()
+                    .replaceAll("<[^>]+>", " ")     // eliminar etiquetas
+                    .replaceAll("\\s+", " ")         // normalizar espacios
+                    .trim();
+
+                // Añadir metadata de procesamiento
+                Map<String, Object> metadata = new HashMap<>(doc.getMetadata());
+                metadata.put("procesado", true);
+                metadata.put("procesadoEn", LocalDateTime.now().toString());
+
+                return new Document(textoLimpio, metadata);
+            })
+            .filter(doc -> doc.getText().length() > 100)  // descartar fragmentos muy cortos
+            .toList();
+    }
+}
+```
+
+#### Composición de transformadores
+
+```java
+// Encadenar transformadores manualmente
+List<Document> docs = reader.get();
+docs = keywordEnricher.apply(docs);
+docs = miLimpiezaCustom.apply(docs);
+docs = splitter.apply(docs);
+vectorStore.add(docs);
+```
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ¿CUÁNDO USAR CADA TRANSFORMADOR?                                            │
+├─────────────────────────────────┬────────────────────────────────────────────┤
+│  KeywordMetadataEnricher        │  Cuando las preguntas de los usuarios usan  │
+│                                 │  sinónimos o términos relacionados al texto │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  SummaryMetadataEnricher        │  Cuando los documentos son largos y         │
+│                                 │  necesitas contexto entre chunks            │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  DocumentTransformer custom     │  Limpieza, traducción, normalización,       │
+│                                 │  enriquecimiento con datos externos         │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  TokenTextSplitter              │  Siempre — divide documentos largos en      │
+│                                 │  chunks que caben en el contexto del modelo │
+└─────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
 ---

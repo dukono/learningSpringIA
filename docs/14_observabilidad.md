@@ -144,15 +144,43 @@ GET /actuator/metrics/gen_ai.client.operation.duration
 
 ### 14.5 Trazas distribuidas con Zipkin (incluyendo Tools)
 
+Spring Boot 3.x usa **Micrometer Tracing** con OpenTelemetry como puente. La dependencia
+`spring.zipkin.base-url` era de Spring Boot 2.x y ya no existe. En Boot 3.x:
+
+#### Dependencias necesarias
+
+```xml
+<!-- Puente Micrometer → OpenTelemetry -->
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-tracing-bridge-otel</artifactId>
+</dependency>
+
+<!-- Exporter de spans a Zipkin -->
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-zipkin</artifactId>
+</dependency>
+```
+
+> 💡 Las versiones las gestiona el BOM de Spring Boot — no pongas versión explícita.
+
+#### Configuración (Spring Boot 3.x)
+
 ```yaml
+# application.yml — configuración correcta para Spring Boot 3.x
 management:
   tracing:
     sampling:
-      probability: 1.0   # 100% de las trazas
-spring:
+      probability: 1.0   # 100% de las trazas (bajar a 0.1 en producción)
   zipkin:
-    base-url: http://localhost:9411
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans  # endpoint correcto de Zipkin v2
 ```
+
+> ⚠️ **Error frecuente**: usar `spring.zipkin.base-url` (propiedad de Spring Boot 2.x).
+> En Boot 3.x esa propiedad no existe — la app arranca sin error pero no envía trazas.
+> La propiedad correcta es `management.zipkin.tracing.endpoint`.
 
 Cada llamada a la IA se convierte en un span rastreable. Si usas Tools, **cada llamada
 a un tool aparece como un span hijo**, permitiendo ver exactamente cuánto tardó cada parte:
