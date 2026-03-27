@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Embeddings](07_embeddings.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: RAG →](09_rag.md)**
+> **[← Embeddings](07_embeddings.md)** | **[← Inicio](../README.md)** | **[Siguiente: RAG →](09_rag.md)**
 
 ---
 
@@ -280,4 +280,4 @@ List<Document> resultados = vectorStore.similaritySearch(
 
 ---
 
-> **[← Embeddings](07_embeddings.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: RAG →](09_rag.md)**
+> **[← Embeddings](07_embeddings.md)** | **[← Inicio](../README.md)** | **[Siguiente: RAG →](09_rag.md)**

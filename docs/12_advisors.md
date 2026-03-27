@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Memory](11_memory.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Multimodalidad →](13_multimodalidad.md)**
+> **[← Memory](11_memory.md)** | **[← Inicio](../README.md)** | **[Siguiente: Multimodalidad →](13_multimodalidad.md)**
 
 ---
 
@@ -165,6 +165,63 @@ public class AuditAdvisor implements CallAroundAdvisor {
 }
 ```
 
+### 12.5b StreamAroundAdvisor — advisors para streaming
+
+`CallAroundAdvisor` funciona con `.call()` (respuesta bloqueante). Para `.stream()` existe
+la interfaz equivalente: `StreamAroundAdvisor`. Un advisor que necesite operar en ambos
+modos debe implementar **las dos interfaces**.
+
+```java
+@Component
+public class StreamingAuditAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+
+    // --- Modo bloqueante (.call()) ---
+    @Override
+    public AdvisedResponse aroundCall(AdvisedRequest request, CallAroundAdvisorChain chain) {
+        log.info("[CALL] pregunta: {}", request.userText());
+        AdvisedResponse response = chain.nextAroundCall(request);
+        log.info("[CALL] respuesta recibida");
+        return response;
+    }
+
+    // --- Modo streaming (.stream()) ---
+    @Override
+    public Flux<AdvisedResponse> aroundStream(
+            AdvisedRequest request, StreamAroundAdvisorChain chain) {
+
+        log.info("[STREAM] pregunta: {}", request.userText());
+        long inicio = System.currentTimeMillis();
+
+        return chain.nextAroundStream(request)
+            .doOnComplete(() ->
+                log.info("[STREAM] completado en {}ms",
+                         System.currentTimeMillis() - inicio));
+    }
+
+    @Override public String getName()  { return "StreamingAuditAdvisor"; }
+    @Override public int    getOrder() { return Ordered.HIGHEST_PRECEDENCE; }
+}
+```
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  CallAroundAdvisor vs StreamAroundAdvisor                                    │
+├──────────────────────────┬───────────────────────────────────────────────────┤
+│  CallAroundAdvisor       │  Intercepta .call() — respuesta completa de golpe │
+│  StreamAroundAdvisor     │  Intercepta .stream() — Flux<AdvisedResponse>     │
+│  Ambas interfaces        │  Advisor compatible con los dos modos              │
+└──────────────────────────┴───────────────────────────────────────────────────┘
+
+Nota: QuestionAnswerAdvisor y MessageChatMemoryAdvisor implementan AMBAS interfaces
+internamente — por eso funcionan igual en .call() y en .stream().
+```
+
+> ⚠️ Si implementas solo `CallAroundAdvisor` y lo usas con `.stream()`, Spring AI
+> lanza `IllegalStateException: no StreamAroundAdvisor found`. Implementa siempre
+> las dos si tu advisor puede usarse en ambos contextos.
+
+---
+
 ### 12.6 Pasar datos de contexto a los Advisors
 
 Puedes pasar datos desde el controller hasta los advisors usando `adviseContext`:
@@ -239,4 +296,4 @@ String tenant  = (String) request.adviseContext().get("tenant");
 
 ---
 
-> **[← Memory](11_memory.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Multimodalidad →](13_multimodalidad.md)**
+> **[← Memory](11_memory.md)** | **[← Inicio](../README.md)** | **[Siguiente: Multimodalidad →](13_multimodalidad.md)**

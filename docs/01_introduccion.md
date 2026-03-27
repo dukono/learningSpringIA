@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)** | **[Siguiente: Setup y entornos →](02_setup_y_entornos.md)**
+> **[← Inicio](../README.md)** | **[Siguiente: Setup y entornos →](02_setup_y_entornos.md)**
 
 ---
 
@@ -280,4 +280,4 @@ Spring AI soporta múltiples proveedores con el mismo código:
 
 ---
 
-> **[← Inicio](00_indice.md)** | **[Siguiente: Setup y entornos →](02_setup_y_entornos.md)**
+> **[← Inicio](../README.md)** | **[Siguiente: Setup y entornos →](02_setup_y_entornos.md)**

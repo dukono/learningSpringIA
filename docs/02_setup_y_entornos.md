@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Introducción](01_introduccion.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: ChatClient →](03_chatclient.md)**
+> **[← Introducción](01_introduccion.md)** | **[← Inicio](../README.md)** | **[Siguiente: ChatClient →](03_chatclient.md)**
 
 ---
 
@@ -125,7 +125,7 @@ spring:
 
 ### 2.3 Obtener las dependencias
 
-Spring AI 1.0.0 está disponible en **Maven Central**, el repositorio estándar.
+Spring AI 1.x (incluida la versión 1.1.0) está disponible en **Maven Central**, el repositorio estándar.
 No necesitas añadir repositorios adicionales.
 
 ```bash
@@ -730,4 +730,4 @@ public class AiConfig {
 
 ---
 
-> **[← Introducción](01_introduccion.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: ChatClient →](03_chatclient.md)**
+> **[← Introducción](01_introduccion.md)** | **[← Inicio](../README.md)** | **[Siguiente: ChatClient →](03_chatclient.md)**

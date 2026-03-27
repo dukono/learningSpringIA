@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Setup y entornos](02_setup_y_entornos.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Prompts →](04_prompts_y_templates.md)**
+> **[← Setup y entornos](02_setup_y_entornos.md)** | **[← Inicio](../README.md)** | **[Siguiente: Prompts →](04_prompts_y_templates.md)**
 
 ---
 
@@ -438,4 +438,4 @@ public class OtroServicio {
 
 ---
 
-> **[← Setup y entornos](02_setup_y_entornos.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Prompts →](04_prompts_y_templates.md)**
+> **[← Setup y entornos](02_setup_y_entornos.md)** | **[← Inicio](../README.md)** | **[Siguiente: Prompts →](04_prompts_y_templates.md)**

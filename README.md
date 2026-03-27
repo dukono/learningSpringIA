@@ -46,14 +46,12 @@ NIVEL INTERMEDIO (los pilares de las apps empresariales)
 
 NIVEL AVANZADO (casos de uso especializados)
 ─────────────────────────────────────────────────────────────────────────
-  Cap. 13 → Multimodalidad — imágenes, audio, video
+  Cap. 13 → Multimodalidad — imágenes, audio, generación, TTS
   Cap. 14 → Observabilidad — métricas, trazas, logs
-  Cap. 17 → Generación de imágenes — DALL-E y Stable Diffusion  (→ ver Cap. 13)
-  Cap. 18 → Audio — transcripción y síntesis de voz (TTS)        (→ ver Cap. 13)
 
 NIVEL PROFESIONAL (producción y calidad)
 ─────────────────────────────────────────────────────────────────────────
-  Cap. 19 → Testing — pruebas unitarias e integración con Spring AI
+  Cap. 17 → Testing — pruebas unitarias e integración con Spring AI
   Cap. 15 → Proyecto completo — chatbot empresarial real
   Cap. 16 → Comparativa, cheatsheet y referencia rápida
 ```
@@ -66,40 +64,38 @@ NIVEL PROFESIONAL (producción y calidad)
 
 | Capítulo | Título | Qué aprenderás |
 |---|---|---|
-| [01](01_introduccion.md) | Introducción a Spring AI | Qué es, por qué usarlo, arquitectura, tokens, roles de mensajes, proveedores soportados |
-| [02](02_setup_y_entornos.md) | Setup y entornos | Crear proyecto, dependencias Maven, configuración dev/prod, Ollama local, API keys |
-| [03](03_chatclient.md) | ChatClient en profundidad | Fluent API completa, ChatModel vs ChatClient, opciones por proveedor, patrones avanzados |
-| [04](04_prompts_y_templates.md) | Prompts y PromptTemplate | Diseño de prompts, PromptTemplate con variables, roles, few-shot prompting |
-| [05](05_structured_output.md) | Structured Output | BeanOutputConverter, MapOutputConverter, validación, errores de parseo |
-| [06](06_streaming.md) | Streaming | Flux, Server-Sent Events, WebFlux, backpressure, integración con frontend |
+| [01](docs/01_introduccion.md) | Introducción a Spring AI | Qué es, por qué usarlo, arquitectura, tokens, roles de mensajes, proveedores soportados |
+| [02](docs/02_setup_y_entornos.md) | Setup y entornos | Crear proyecto, dependencias Maven, configuración dev/prod, Ollama local, API keys |
+| [03](docs/03_chatclient.md) | ChatClient en profundidad | Fluent API completa, ChatModel vs ChatClient, opciones por proveedor, patrones avanzados |
+| [04](docs/04_prompts_y_templates.md) | Prompts y PromptTemplate | Diseño de prompts, PromptTemplate con variables, roles, few-shot prompting |
+| [05](docs/05_structured_output.md) | Structured Output | BeanOutputConverter, MapOutputConverter, validación, errores de parseo |
+| [06](docs/06_streaming.md) | Streaming | Flux, Server-Sent Events, WebFlux, backpressure, integración con frontend |
 
 ### Componentes principales
 
 | Capítulo | Título | Qué aprenderás |
 |---|---|---|
-| [07](07_embeddings.md) | Embeddings | Qué son los vectores, EmbeddingModel, distancia coseno, casos de uso |
-| [08](08_vector_store.md) | Vector Store | pgvector, Chroma, Weaviate, indexar y buscar documentos |
-| [09](09_rag.md) | RAG | Alucinación, indexación, retrieval, QuestionAnswerAdvisor, RAG avanzado |
-| [10](10_tools.md) | Tools / Function Calling | @Tool, @ToolParam, ToolContext, tools encadenadas, seguridad |
-| [11](11_memory.md) | Memory | ChatMemory, InMemoryChatMemory, historial de conversación, ventana de contexto |
-| [12](12_advisors.md) | Advisors | Arquitectura de advisors, built-in advisors, advisors custom, orden de ejecución |
+| [07](docs/07_embeddings.md) | Embeddings | Qué son los vectores, EmbeddingModel, distancia coseno, casos de uso |
+| [08](docs/08_vector_store.md) | Vector Store | pgvector, Chroma, Weaviate, indexar y buscar documentos |
+| [09](docs/09_rag.md) | RAG | Alucinación, indexación, retrieval, QuestionAnswerAdvisor, RAG avanzado |
+| [10](docs/10_tools.md) | Tools / Function Calling | @Tool, @ToolParam, ToolContext, tools encadenadas, seguridad |
+| [11](docs/11_memory.md) | Memory | ChatMemory, InMemoryChatMemory, JdbcChatMemory, ventana de contexto |
+| [12](docs/12_advisors.md) | Advisors | Arquitectura de advisors, built-in advisors, StreamAroundAdvisor, orden de ejecución |
 
 ### Capacidades avanzadas
 
 | Capítulo | Título | Qué aprenderás |
 |---|---|---|
-| [13](13_multimodalidad.md) | Multimodalidad | Imágenes en el prompt, análisis visual, audio, modelos multimodales |
-| [14](14_observabilidad.md) | Observabilidad | Micrometer, trazas, métricas de tokens, logs estructurados |
-| [17](13_multimodalidad.md) | Generación de imágenes | DALL-E, Stable Diffusion, ImageModel, tamaños y calidades |
-| [18](13_multimodalidad.md) | Audio — transcripción y TTS (Text-to-Speech) | Whisper, Text-to-Speech (TTS), SpeechModel, AudioTranscriptionModel |
+| [13](docs/13_multimodalidad.md) | Multimodalidad | Visión, generación de imágenes (DALL-E), transcripción (Whisper), TTS, Ollama visión |
+| [14](docs/14_observabilidad.md) | Observabilidad | Micrometer, trazas, métricas de tokens, Prometheus, Grafana |
 
 ### Producción y referencia
 
 | Capítulo | Título | Qué aprenderás |
 |---|---|---|
-| [19](19_testing.md) | Testing con Spring AI | Mocks de ChatModel, pruebas de integración, TestContainers, estrategias |
-| [15](15_proyecto_completo.md) | Proyecto completo | Chatbot empresarial real: RAG + Tools + Memory + Streaming + Observabilidad |
-| [16](16_comparativa_y_cheatsheet.md) | Comparativa y cheatsheet | Spring AI vs alternativas, tabla de decisión, referencia rápida |
+| [17](docs/17_testing.md) | Testing con Spring AI | MockChatModel, @TestConfiguration, TestContainers con pgvector, testear advisors y tools |
+| [15](docs/15_proyecto_completo.md) | Proyecto completo | Chatbot empresarial real: RAG + Tools + Memory + Streaming + Observabilidad |
+| [16](docs/16_comparativa_y_cheatsheet.md) | Comparativa y cheatsheet | Spring AI vs alternativas, tabla de decisión, referencia rápida |
 
 ---
 
@@ -128,8 +124,7 @@ NIVEL PROFESIONAL (producción y calidad)
 │  [12 Advisors] ─────────────────────────────┘                          │  │ │
 │                              │                                          │  │ │
 │                              ▼                                          │  │ │
-│  [13 Multimodalidad]    [14 Observabilidad]    [17 Imágenes]            │  │ │
-│  [18 Audio]             [19 Testing]                                    │  │ │
+│  [13 Multimodalidad]    [14 Observabilidad]    [17 Testing]             │  │ │
 │                              │                                          │  │ │
 │                              ▼                                          ▼  ▼ │
 │                     [15 Proyecto Completo] ◄────────────────────────────┘  │ │
@@ -212,5 +207,4 @@ ollama run llama3.2 "Hola, ¿funcionas?"
 
 ---
 
-*Guía mantenida como documentación técnica del proyecto de aprendizaje.*
 *Stack: Java 21 · Spring Boot 3.x · Spring AI 1.1.0 · Maven · Ollama*

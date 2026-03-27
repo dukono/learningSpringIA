@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Prompts](04_prompts_y_templates.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Streaming →](06_streaming.md)**
+> **[← Prompts](04_prompts_y_templates.md)** | **[← Inicio](../README.md)** | **[Siguiente: Streaming →](06_streaming.md)**
 
 ---
 
@@ -378,4 +378,4 @@ Empresa empresa = chatClient.prompt()
 
 ---
 
-> **[← Prompts](04_prompts_y_templates.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Streaming →](06_streaming.md)**
+> **[← Prompts](04_prompts_y_templates.md)** | **[← Inicio](../README.md)** | **[Siguiente: Streaming →](06_streaming.md)**

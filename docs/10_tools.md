@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← RAG](09_rag.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Memory →](11_memory.md)**
+> **[← RAG](09_rag.md)** | **[← Inicio](../README.md)** | **[Siguiente: Memory →](11_memory.md)**
 
 ---
 
@@ -576,4 +576,4 @@ resilience4j:
 
 ---
 
-> **[← RAG](09_rag.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Memory →](11_memory.md)**
+> **[← RAG](09_rag.md)** | **[← Inicio](../README.md)** | **[Siguiente: Memory →](11_memory.md)**

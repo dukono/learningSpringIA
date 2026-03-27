@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Streaming](06_streaming.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Vector Store →](08_vector_store.md)**
+> **[← Streaming](06_streaming.md)** | **[← Inicio](../README.md)** | **[Siguiente: Vector Store →](08_vector_store.md)**
 
 ---
 
@@ -319,4 +319,4 @@ Consulta: "¿En cuánto tiempo me llega el pedido?"
 
 ---
 
-> **[← Streaming](06_streaming.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Vector Store →](08_vector_store.md)**
+> **[← Streaming](06_streaming.md)** | **[← Inicio](../README.md)** | **[Siguiente: Vector Store →](08_vector_store.md)**

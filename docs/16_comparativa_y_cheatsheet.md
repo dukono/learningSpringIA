@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Inicio](00_indice.md)**
+> **[← Inicio](../README.md)**
 
 ---
 
@@ -63,7 +63,7 @@
 │  vectorStore.add(List.of(new Document("texto")))                             │
 │                                                                              │
 │  VECTOR STORE — BUSCAR                                                       │
-│  vectorStore.similaritySearch(SearchRequest.query("consulta").withTopK(5))   │
+│  vectorStore.similaritySearch(SearchRequest.builder().query("consulta").topK(5).build())   │
 │                                                                              │
 │  RAG AUTOMÁTICO                                                              │
 │  builder.defaultAdvisors(new QuestionAnswerAdvisor(vectorStore))             │
@@ -112,4 +112,4 @@
 
 ---
 
-> **[← Volver al índice](00_indice.md)**
+> **[← Volver al índice](../README.md)**

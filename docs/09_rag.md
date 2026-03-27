@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Vector Store](08_vector_store.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Tools →](10_tools.md)**
+> **[← Vector Store](08_vector_store.md)** | **[← Inicio](../README.md)** | **[Siguiente: Tools →](10_tools.md)**
 
 ---
 
@@ -417,6 +417,97 @@ de los casos. Para casos más exigentes existe **RAG avanzado**:
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Query Rewriting — ejemplo con código
+
+La técnica más práctica del RAG avanzado. Antes de buscar en el vector store,
+se pide al modelo que reformule la pregunta del usuario en términos más adecuados
+para búsqueda semántica.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  POR QUÉ FUNCIONA MEJOR                                                      │
+│                                                                              │
+│  Pregunta original:   "¿cómo lo activo?"                                    │
+│  → Embeddings de "cómo lo activo" → vector muy genérico → chunks irrelevantes│
+│                                                                              │
+│  Pregunta reescrita:  "pasos para activar funcionalidad en panel de admin"  │
+│  → Embeddings del texto expandido → vector más específico → mejores chunks  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+```java
+@Service
+public class QueryRewritingRagService {
+
+    @Autowired ChatClient  chatClient;
+    @Autowired VectorStore vectorStore;
+
+    // Prompt dedicado para reescribir — usa un modelo rápido y barato
+    private final ChatClient rewriterClient;
+
+    public QueryRewritingRagService(ChatClient.Builder builder, VectorStore vectorStore) {
+        this.vectorStore = vectorStore;
+        // Cliente específico para reescritura — sin advisors, sin historial
+        this.rewriterClient = builder
+            .defaultSystem("""
+                Tu única tarea es reformular la pregunta del usuario para mejorar
+                la búsqueda semántica en una base de documentos técnicos.
+                Devuelve SOLO la pregunta reformulada, sin explicación ni comillas.
+                Usa términos técnicos específicos. Si la pregunta ya es específica,
+                devuélvela igual.
+                """)
+            .build();
+        this.chatClient = builder.build();
+    }
+
+    public String preguntaConReescritura(String preguntaOriginal) {
+
+        // PASO 1: reescribir la pregunta para mejorar la búsqueda
+        String preguntaOptimizada = rewriterClient.prompt()
+            .user("Reformula para búsqueda semántica: " + preguntaOriginal)
+            .call()
+            .content();
+
+        log.debug("Query original:   '{}'", preguntaOriginal);
+        log.debug("Query reescrita:  '{}'", preguntaOptimizada);
+
+        // PASO 2: buscar con la pregunta optimizada, no con la original
+        List<Document> chunks = vectorStore.similaritySearch(
+            SearchRequest.builder()
+                .query(preguntaOptimizada)  // ← pregunta reformulada
+                .topK(5)
+                .similarityThreshold(0.6)
+                .build()
+        );
+
+        if (chunks.isEmpty()) {
+            return "No encontré información relevante en la documentación.";
+        }
+
+        // PASO 3: construir el prompt con el contexto encontrado
+        String contexto = chunks.stream()
+            .map(Document::getContent)
+            .collect(Collectors.joining("\n---\n"));
+
+        // PASO 4: respuesta final con el contexto real
+        return chatClient.prompt()
+            .system("""
+                Responde usando SOLO el contexto proporcionado.
+                Si la respuesta no está en el contexto, dilo claramente.
+                """)
+            .user("Contexto:\n" + contexto + "\n\nPregunta: " + preguntaOriginal)
+            .call()
+            .content();
+    }
+}
+```
+
+> 💡 Este patrón manual da más control que `QuestionAnswerAdvisor` pero requiere
+> más código. Úsalo cuando el RAG naïve devuelva resultados pobres en preguntas
+> cortas, conversacionales o con referencias implícitas ("¿cómo lo hago?", "¿y si falla?").
+
+---
+
 ### Lectores de documentos disponibles
 
 ```java
@@ -441,4 +532,4 @@ new GithubDocumentReader(token, "usuario/repo")
 
 ---
 
-> **[← Vector Store](08_vector_store.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Tools →](10_tools.md)**
+> **[← Vector Store](08_vector_store.md)** | **[← Inicio](../README.md)** | **[Siguiente: Tools →](10_tools.md)**

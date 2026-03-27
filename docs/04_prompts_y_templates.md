@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← ChatClient](03_chatclient.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Structured Output →](05_structured_output.md)**
+> **[← ChatClient](03_chatclient.md)** | **[← Inicio](../README.md)** | **[Siguiente: Structured Output →](05_structured_output.md)**
 
 ---
 
@@ -407,4 +407,4 @@ La descripción debe tener 2 párrafos."
 
 ---
 
-> **[← ChatClient](03_chatclient.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Structured Output →](05_structured_output.md)**
+> **[← ChatClient](03_chatclient.md)** | **[← Inicio](../README.md)** | **[Siguiente: Structured Output →](05_structured_output.md)**

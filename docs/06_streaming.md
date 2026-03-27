@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Structured Output](05_structured_output.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Embeddings →](07_embeddings.md)**
+> **[← Structured Output](05_structured_output.md)** | **[← Inicio](../README.md)** | **[Siguiente: Embeddings →](07_embeddings.md)**
 
 ---
 
@@ -337,4 +337,4 @@ public class ChatStreamService {
 
 ---
 
-> **[← Structured Output](05_structured_output.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Embeddings →](07_embeddings.md)**
+> **[← Structured Output](05_structured_output.md)** | **[← Inicio](../README.md)** | **[Siguiente: Embeddings →](07_embeddings.md)**

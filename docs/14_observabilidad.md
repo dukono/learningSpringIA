@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Multimodalidad](13_multimodalidad.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Proyecto Completo →](15_proyecto_completo.md)**
+> **[← Multimodalidad](13_multimodalidad.md)** | **[← Inicio](../README.md)** | **[Siguiente: Proyecto Completo →](15_proyecto_completo.md)**
 
 ---
 
@@ -269,4 +269,4 @@ rate(gen_ai_client_operation_duration_seconds_count[1m])
 
 ---
 
-> **[← Multimodalidad](13_multimodalidad.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Proyecto Completo →](15_proyecto_completo.md)**
+> **[← Multimodalidad](13_multimodalidad.md)** | **[← Inicio](../README.md)** | **[Siguiente: Proyecto Completo →](15_proyecto_completo.md)**

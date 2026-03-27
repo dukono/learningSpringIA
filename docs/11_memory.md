@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Tools](10_tools.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Advisors →](12_advisors.md)**
+> **[← Tools](10_tools.md)** | **[← Inicio](../README.md)** | **[Siguiente: Advisors →](12_advisors.md)**
 
 ---
 
@@ -193,20 +193,117 @@ Turno 2:
   Respuesta: "Te llamas Carlos."  ✓
 ```
 
-### 11.6 Memoria persistente con base de datos
+### 11.6 Memoria persistente con base de datos — JdbcChatMemory
+
+`JdbcChatMemory` guarda el historial en una tabla SQL, por lo que sobrevive a reinicios
+y es compatible con despliegues de múltiples instancias.
+
+#### Dependencia
+
+```xml
+<!-- Ya incluida si tienes spring-boot-starter-data-jdbc o spring-boot-starter-web -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
+```
+
+#### Schema de base de datos requerido
+
+Spring AI **no crea la tabla automáticamente**. Debes crearla tú con Flyway, Liquibase
+o directamente en el script de inicialización:
+
+```sql
+-- Para PostgreSQL / MySQL / H2 (compatible con todos)
+CREATE TABLE IF NOT EXISTS spring_ai_chat_memory (
+    id            BIGSERIAL PRIMARY KEY,       -- PostgreSQL; en MySQL: BIGINT AUTO_INCREMENT
+    conversation_id VARCHAR(255) NOT NULL,     -- ID de la conversación (tu userId o sessionId)
+    content       TEXT          NOT NULL,      -- contenido del mensaje (JSON serializado)
+    type          VARCHAR(50)   NOT NULL,      -- "USER", "ASSISTANT" o "SYSTEM"
+    created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índice para acelerar la consulta por conversationId (imprescindible en producción)
+CREATE INDEX IF NOT EXISTS idx_chat_memory_conversation
+    ON spring_ai_chat_memory (conversation_id, created_at);
+```
+
+> 💡 Con H2 en tests no necesitas crear la tabla manualmente si activas
+> `spring.sql.init.mode=always` junto con un archivo `schema.sql` en `src/test/resources/`.
+
+#### Configuración del bean
 
 ```java
-// Para producción: guardar el historial en BD (no se pierde al reiniciar)
-@Bean
-public ChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
-    return new JdbcChatMemory(jdbcTemplate);  // persiste en BD
+@Configuration
+public class ChatMemoryConfig {
+
+    // Desarrollo: en memoria (se pierde al reiniciar)
+    @Bean
+    @Profile("dev")
+    public ChatMemory inMemoryChatMemory() {
+        return new InMemoryChatMemory();
+    }
+
+    // Producción: persistente en BD
+    @Bean
+    @Profile("prod")
+    public ChatMemory jdbcChatMemory(JdbcTemplate jdbcTemplate) {
+        return new JdbcChatMemory(jdbcTemplate);
+    }
 }
 ```
 
-> **¿Cuándo usar cada tipo?**
-> - `InMemoryChatMemory` → solo para tests y demos. Pierde todo al reiniciar.
-> - `JdbcChatMemory` → producción. Historial persistente en tu BD.
-> - `conversationHistoryWindowSize(10)` → siempre configúralo para controlar el coste.
+#### Cómo limpiar el historial de una conversación
+
+Cuando el usuario hace "nuevo chat" debes borrar el historial para que el modelo
+no arrastre el contexto anterior:
+
+```java
+@Service
+public class ChatService {
+
+    @Autowired ChatClient  chatClient;
+    @Autowired ChatMemory  chatMemory;
+    @Autowired JdbcTemplate jdbcTemplate;  // solo si usas JdbcChatMemory
+
+    public String chat(String conversationId, String mensaje) {
+        return chatClient.prompt()
+            .user(mensaje)
+            .advisors(a -> a.param(
+                AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+            .call().content();
+    }
+
+    // Llamar cuando el usuario pulsa "Nueva conversación"
+    public void limpiarHistorial(String conversationId) {
+        // Funciona tanto con InMemoryChatMemory como con JdbcChatMemory
+        chatMemory.clear(conversationId);
+    }
+
+    // Alternativa directa en BD (más eficiente para JdbcChatMemory en prod)
+    public void limpiarHistorialBD(String conversationId) {
+        jdbcTemplate.update(
+            "DELETE FROM spring_ai_chat_memory WHERE conversation_id = ?",
+            conversationId
+        );
+    }
+}
+```
+
+#### Tabla de decisión
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ¿QUÉ IMPLEMENTACIÓN DE ChatMemory USAR?                                     │
+├────────────────────────┬─────────────────────────────────────────────────────┤
+│  InMemoryChatMemory    │  Tests, demos locales. Pierde todo al reiniciar.    │
+│  JdbcChatMemory        │  Producción. Requiere tabla en BD. Persistente.     │
+│  CassandraChatMemory   │  Alta escala. Requiere Apache Cassandra.            │
+│  RedisChatMemory       │  Baja latencia. Requiere Redis. TTL configurable.   │
+└────────────────────────┴─────────────────────────────────────────────────────┘
+
+Regla: siempre configura conversationHistoryWindowSize para controlar el coste.
+```
 
 ## 11.7 Errores comunes
 
@@ -257,4 +354,4 @@ public ChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
 
 ---
 
-> **[← Tools](10_tools.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Advisors →](12_advisors.md)**
+> **[← Tools](10_tools.md)** | **[← Inicio](../README.md)** | **[Siguiente: Advisors →](12_advisors.md)**

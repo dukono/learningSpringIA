@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Advisors](12_advisors.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Observabilidad →](14_observabilidad.md)**
+> **[← Advisors](12_advisors.md)** | **[← Inicio](../README.md)** | **[Siguiente: Observabilidad →](14_observabilidad.md)**
 
 ---
 
@@ -10,8 +10,130 @@
 
 ## 13. Multimodalidad — imágenes y audio
 
-Spring AI soporta el envío de imágenes y audio al modelo (modelos multimodales como GPT-4o,
-Claude 3, Gemini).
+### El problema que resuelve
+
+Los LLMs de texto son ciegos y sordos: solo procesan palabras. Pero muchos casos de
+uso empresariales requieren trabajar con otros tipos de datos:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  SIN MULTIMODALIDAD — solo texto                                              │
+│                                                                              │
+│  Usuario: [sube factura.jpg] "¿Cuánto es el total?"                          │
+│  Modelo:  ❌ No puede leer la imagen — solo ve texto                          │
+│                                                                              │
+│  CON MULTIMODALIDAD — varios tipos de entrada                                │
+│                                                                              │
+│  Usuario: [sube factura.jpg] "¿Cuánto es el total?"                          │
+│  GPT-4o:  ✅ "El total de la factura es 1.247,50 € con IVA incluido."        │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+Spring AI unifica cuatro capacidades multimodales bajo una API común:
+
+| Capacidad | Dirección | API de Spring AI |
+|---|---|---|
+| **Visión** | Imagen → texto (análisis, descripción, extracción) | `ChatClient` + `Media` |
+| **Transcripción** | Audio → texto (Whisper) | `AudioTranscriptionModel` |
+| **Generación de imágenes** | Texto → imagen (DALL-E, Stable Diffusion) | `ImageModel` |
+| **Text-to-Speech** | Texto → audio | `SpeechModel` |
+
+---
+
+### Cómo funciona internamente
+
+Antes de enviar al modelo, Spring AI **codifica la imagen en Base64** y la incluye
+en el cuerpo JSON de la petición junto al texto:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  LO QUE REALMENTE SE ENVÍA A LA API                                          │
+│                                                                              │
+│  {                                                                           │
+│    "model": "gpt-4o",                                                        │
+│    "messages": [{                                                            │
+│      "role": "user",                                                         │
+│      "content": [                                                            │
+│        { "type": "text",  "text": "¿Cuál es el total de esta factura?" },   │
+│        { "type": "image_url",                                                │
+│          "image_url": { "url": "data:image/jpeg;base64,/9j/4AAQ..." } }     │
+│      ]                                                                       │
+│    }]                                                                        │
+│  }                                                                           │
+│                                                                              │
+│  Spring AI hace esta conversión automáticamente desde byte[]/Resource/URI.  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+El modelo procesa texto e imagen juntos como una sola unidad de contexto.
+**No hay una API separada para imágenes** — es el mismo endpoint de chat.
+
+---
+
+### ¿Qué modelos soportan qué capacidades?
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  SOPORTE DE CAPACIDADES MULTIMODALES POR MODELO                              │
+├────────────────────┬──────────┬───────────────┬────────────┬─────────────────┤
+│  Modelo            │  Visión  │  Transcripción│  Img. Gen. │  TTS            │
+├────────────────────┼──────────┼───────────────┼────────────┼─────────────────┤
+│  GPT-4o            │  ✅      │  —            │  —         │  —              │
+│  GPT-4-turbo       │  ✅      │  —            │  —         │  —              │
+│  GPT-4o-mini       │  ✅      │  —            │  —         │  —              │
+│  whisper-1         │  —       │  ✅           │  —         │  —              │
+│  dall-e-3          │  —       │  —            │  ✅        │  —              │
+│  dall-e-2          │  —       │  —            │  ✅        │  —              │
+│  tts-1 / tts-1-hd  │  —       │  —            │  —         │  ✅             │
+│  Claude 3 Opus/S/H │  ✅      │  —            │  —         │  —              │
+│  Gemini 1.5 Pro    │  ✅      │  ✅           │  —         │  —              │
+│  Ollama llava      │  ✅      │  —            │  —         │  —              │
+│  Ollama bakllava   │  ✅      │  —            │  —         │  —              │
+│  GPT-3.5-turbo     │  ❌      │  —            │  —         │  —              │
+│  llama3.2 (texto)  │  ❌      │  —            │  —         │  —              │
+└────────────────────┴──────────┴───────────────┴────────────┴─────────────────┘
+```
+
+> 🔑 **Regla**: para visión siempre usa un modelo con `-vision` o multimodal explícito.
+> `gpt-3.5-turbo` y los modelos Llama de texto puro **no procesan imágenes**.
+
+---
+
+### Límites importantes de las APIs (referencia para producción)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  LÍMITES A CONOCER ANTES DE DESPLEGAR                                        │
+├──────────────────────────────────────────────────┬───────────────────────────┤
+│  VISIÓN (OpenAI GPT-4o)                          │                           │
+│  Tamaño máximo por imagen                        │  20 MB                    │
+│  Formatos soportados                             │  JPEG, PNG, GIF, WebP     │
+│  Imágenes por petición                           │  Hasta ~10 (recomendado 1-3)│
+│  Coste extra por imagen (modo "high")            │  ~510 tokens adicionales   │
+├──────────────────────────────────────────────────┼───────────────────────────┤
+│  TRANSCRIPCIÓN (Whisper)                         │                           │
+│  Tamaño máximo por archivo                       │  25 MB                    │
+│  Duración máxima                                 │  Sin límite oficial (25MB) │
+│  Formatos soportados                             │  mp3, mp4, wav, m4a, webm │
+│  Para archivos > 25MB                            │  Dividir en segmentos     │
+├──────────────────────────────────────────────────┼───────────────────────────┤
+│  GENERACIÓN DE IMÁGENES (DALL-E 3)               │                           │
+│  Tamaños disponibles                             │  1024×1024, 1792×1024,    │
+│                                                  │  1024×1792                │
+│  Imágenes por petición                           │  Máx. 1 (DALL-E 3)        │
+│  Restricciones de contenido                      │  Sin violencia, adulto    │
+│                                                  │  ni personajes reales     │
+├──────────────────────────────────────────────────┼───────────────────────────┤
+│  TEXT-TO-SPEECH (OpenAI)                         │                           │
+│  Caracteres máximos por petición                 │  4.096 caracteres         │
+│  Para textos más largos                          │  Dividir y concatenar     │
+│  Formatos de salida                              │  mp3, opus, aac, flac     │
+└──────────────────────────────────────────────────┴───────────────────────────┘
+```
+
+---
+
+### 13.1 Visión — análisis de imágenes
 
 ### Enviar imagen para análisis
 
@@ -44,6 +166,60 @@ public String analizarURL() {
         .content();
 }
 ```
+
+### Visión con Ollama (desarrollo local, sin coste)
+
+Para desarrollo local sin coste ni API key, Ollama ofrece modelos de visión:
+
+```bash
+# Descargar modelos de visión para Ollama
+ollama pull llava          # LLaVA 7B — bueno para uso general (~4GB)
+ollama pull llava:13b      # LLaVA 13B — más preciso (~8GB)
+ollama pull bakllava       # BakLLaVA — alternativa más ligera (~4GB)
+```
+
+```yaml
+# application-dev.yml — configuración para visión con Ollama
+spring:
+  ai:
+    ollama:
+      chat:
+        model: llava        # ← modelo con visión, no llama3.2
+```
+
+```java
+// El código Java es idéntico al de OpenAI — solo cambia el modelo en la config
+public String analizarImagenLocal(byte[] imagenBytes) {
+    return chatClient.prompt()
+        .user(u -> u.text("Describe lo que ves en esta imagen en detalle.")
+                    .media(MimeTypeUtils.IMAGE_JPEG, imagenBytes))
+        .call()
+        .content();
+}
+```
+
+> ⚠️ Los modelos de visión de Ollama (llava, bakllava) son menos precisos que
+> GPT-4o en tareas complejas (análisis de facturas, lectura de texto, diagramas).
+> Úsalos para desarrollo y pruebas; en producción evalúa GPT-4o o Claude 3.
+
+---
+
+### Enviar múltiples imágenes en un prompt
+
+```java
+// GPT-4o admite hasta ~10 imágenes por petición
+public String compararImagenes(byte[] imagen1, byte[] imagen2) {
+    return chatClient.prompt()
+        .user(u -> u
+            .text("Compara estas dos imágenes y describe las diferencias principales.")
+            .media(MimeTypeUtils.IMAGE_JPEG, imagen1)
+            .media(MimeTypeUtils.IMAGE_JPEG, imagen2))
+        .call()
+        .content();
+}
+```
+
+---
 
 ### Transcripción de audio (Speech-to-Text)
 
@@ -311,4 +487,4 @@ Flujo completo:
 
 ---
 
-> **[← Advisors](12_advisors.md)** | **[← Inicio](00_indice.md)** | **[Siguiente: Observabilidad →](14_observabilidad.md)**
+> **[← Advisors](12_advisors.md)** | **[← Inicio](../README.md)** | **[Siguiente: Observabilidad →](14_observabilidad.md)**

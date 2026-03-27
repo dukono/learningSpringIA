@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](00_indice.md)**
+> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](../README.md)**
 
 ---
 
@@ -129,6 +129,51 @@ public class AiConfig {
     }
 }
 ```
+
+### SecurityConfig.java
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    // Permite acceso libre a la API de chat y actuator desde cualquier origen.
+    // En producción: sustituir .permitAll() por autenticación JWT u OAuth2.
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())   // necesario para POST desde clientes externos
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/chat/**").permitAll()        // chat público
+                .requestMatchers("/api/documentos/**").authenticated() // subida protegida
+                .requestMatchers("/actuator/health").permitAll()    // healthcheck para K8s
+                .requestMatchers("/actuator/**").hasRole("ADMIN")   // métricas solo admin
+                .anyRequest().authenticated()
+            )
+            .httpBasic(Customizer.withDefaults()); // básico para demo; en prod → JWT/OAuth2
+        return http.build();
+    }
+
+    // Usuario de demo para desarrollo. En producción usar UserDetailsService real.
+    @Bean
+    @Profile("dev")
+    public UserDetailsService devUsers() {
+        UserDetails admin = User.withDefaultPasswordEncoder()
+            .username("admin")
+            .password("admin")
+            .roles("ADMIN")
+            .build();
+        return new InMemoryUserDetailsManager(admin);
+    }
+}
+```
+
+> ⚠️ **En producción** reemplaza `httpBasic` por JWT o OAuth2 (Spring Security 6).
+> El patrón recomendado es un `JwtAuthenticationFilter` que extraiga el `userId`
+> del token y lo inyecte en el `ToolContext` para los tools que necesiten saber
+> quién está preguntando (ver Cap. 10 — seguridad en tools).
+
+---
 
 ### DocumentController.java
 
@@ -337,4 +382,4 @@ son de integración — no de un componente individual:
 
 ---
 
-> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](00_indice.md)**
+> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](../README.md)**
