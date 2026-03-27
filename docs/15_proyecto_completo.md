@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](../README.md)**
+> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](../README.md)** | **[Siguiente: Comparativa →](16_comparativa_y_cheatsheet.md)**
 
 ---
 
@@ -382,4 +382,4 @@ son de integración — no de un componente individual:
 
 ---
 
-> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](../README.md)**
+> **[← Observabilidad](14_observabilidad.md)** | **[← Inicio](../README.md)** | **[Siguiente: Comparativa →](16_comparativa_y_cheatsheet.md)**

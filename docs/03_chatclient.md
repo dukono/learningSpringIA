@@ -118,7 +118,7 @@ String texto = response.getResult().getOutput().getContent();
 Usage usage = response.getMetadata().getUsage();
 System.out.println("Tokens usados: " + usage.getTotalTokens());
 System.out.println("  → Prompt:    " + usage.getPromptTokens());
-System.out.println("  → Respuesta: " + usage.getGenerationTokens());
+System.out.println("  → Respuesta: " + usage.getOutputTokens());
 
 // Modelo que respondió
 String modelo = response.getMetadata().getModel();
@@ -316,13 +316,11 @@ y cómo manejarlas correctamente.
 │  NonTransientAiException  — errores que NO tienen sentido reintentar:       │
 │    ├── BadRequestException      → 400: prompt malformado, parámetros malos  │
 │    ├── AuthenticationException  → 401: API key incorrecta o expirada        │
-│    ├── ContentFilterException   → prompt rechazado por filtro de contenido  │
-│    └── ModelNotAvailableException → el modelo especificado no existe         │
+│    └── ContentFilterException   → prompt rechazado por filtro de contenido  │
 │                                                                              │
 │  TransientAiException  — errores temporales que SÍ vale la pena reintentar: │
-│    ├── RateLimitException       → 429: demasiadas peticiones                │
-│    ├── ResourceUnavailableException → 503: servicio caído temporalmente     │
-│    └── AiConnectionException   → fallo de red / timeout                    │
+│    ├── RateLimitException          → 429: demasiadas peticiones             │
+│    └── ModelNotAvailableException  → 503: modelo no disponible temporalmente│
 │                                                                              │
 │  Ambas heredan de: AiException → RuntimeException                           │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -434,6 +432,55 @@ public class MiServicio {
 public class OtroServicio {
     @Autowired ChatModel chatModel;  // ← solo si tienes razón específica
 }
+```
+
+---
+
+## 3.9 Errores comunes con ChatClient
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES CON ChatClient                                           │
+├─────────────────────────────────┬────────────────────────────────────────────┤
+│  Error                          │  Causa y solución                          │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  NoUniqueBeanDefinitionException│  Inyectar ChatClient directamente cuando   │
+│  al inyectar ChatClient         │  hay más de un proveedor configurado.      │
+│                                 │  Spring no sabe cuál de los beans usar.    │
+│                                 │  ✅ Inyectar siempre ChatClient.Builder    │
+│                                 │  (único) y construir ChatClient en el      │
+│                                 │  constructor del servicio.                 │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Respuesta cortada en mitad de  │  maxTokens configurado demasiado bajo.     │
+│  frase (stopReason = "length")  │  El modelo para al alcanzar el límite      │
+│                                 │  antes de terminar la oración.             │
+│                                 │  ✅ Revisar usage.getOutputTokens() y      │
+│                                 │  aumentar maxTokens. Para respuestas       │
+│                                 │  largas, usar .stream() para detectar      │
+│                                 │  el problema en tiempo real.               │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  El system prompt se duplica o  │  defaultSystem() en el builder establece   │
+│  sobreescribe inesperadamente   │  el system por defecto. Si además llamas   │
+│                                 │  .system() en la petición, sobreescribe al │
+│                                 │  anterior (no se concatenan).              │
+│                                 │  ✅ defaultSystem() para instrucciones      │
+│                                 │  globales. .system() solo cuando necesitas │
+│                                 │  variarlo por petición concreta.           │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  ReadTimeoutException en        │  El read-timeout es el tiempo de espera    │
+│  prompts con respuestas largas  │  de la respuesta completa. GPT-4o puede    │
+│                                 │  tardar 20-30s generando 2000 tokens.      │
+│                                 │  ✅ Aumentar read-timeout en YAML, o usar  │
+│                                 │  .stream() para no bloquear el hilo.       │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  defaultOptions() ignoradas     │  Las opciones por defecto del builder se   │
+│  en algunas peticiones          │  sobreescriben si se llama a .options() en │
+│                                 │  la petición. Las opciones de petición     │
+│                                 │  tienen prioridad sobre las del builder.   │
+│                                 │  ✅ Usar .options() en la petición solo    │
+│                                 │  para excepciones puntuales, no de forma   │
+│                                 │  sistemática.                              │
+└─────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
 ---

@@ -770,4 +770,59 @@ vectorStore.add(docs);
 
 ---
 
+## 9.1 Errores comunes en el pipeline RAG
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES EN RAG                                                   │
+├─────────────────────────────────┬────────────────────────────────────────────┤
+│  Error                          │  Causa y solución                          │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  El modelo responde "no tengo   │  topK demasiado bajo o similarityThreshold │
+│  información" aunque el         │  demasiado alto → no recupera chunks       │
+│  documento está indexado        │  relevantes. O el chunk está indexado con  │
+│                                 │  un embedding diferente al de la consulta. │
+│                                 │  ✅ Bajar similarityThreshold (0.5-0.65),  │
+│                                 │  subir topK (5-10), y verificar que        │
+│                                 │  EmbeddingModel de indexación y consulta   │
+│                                 │  son el mismo modelo.                      │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Respuestas basadas en datos    │  El VectorStore no se actualiza cuando     │
+│  obsoletos aunque los           │  cambian los documentos fuente. Los chunks │
+│  documentos han cambiado        │  antiguos permanecen indefinidamente.      │
+│                                 │  ✅ Implementar un pipeline de             │
+│                                 │  re-indexación: delete(ids) + add(nuevos   │
+│                                 │  documentos) cuando cambie la fuente.      │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Alucinaciones aunque hay RAG   │  El system prompt no instruye explícitamente│
+│  configurado                    │  al modelo a responder solo con el         │
+│                                 │  contexto proporcionado.                   │
+│                                 │  ✅ Añadir en el system prompt: "Responde  │
+│                                 │  ÚNICAMENTE con la información del         │
+│                                 │  contexto proporcionado. Si no encuentras  │
+│                                 │  la respuesta en el contexto, di           │
+│                                 │  explícitamente que no lo sabes."          │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Chunks recuperados irrelevantes│  El TokenTextSplitter usa un chunkSize     │
+│  → contexto de baja calidad     │  inadecuado: demasiado pequeño (pierde     │
+│                                 │  contexto semántico) o demasiado grande    │
+│                                 │  (mezcla temas distintos en un chunk).     │
+│                                 │  ✅ Ajustar defaultChunkSize (400-600      │
+│                                 │  tokens) y defaultOverlapSize (50-100)     │
+│                                 │  según el tipo de documento.               │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Alto coste al usar             │  KeywordMetadataEnricher y                 │
+│  DocumentTransformer en         │  SummaryMetadataEnricher llaman al LLM     │
+│  indexación masiva              │  por cada chunk. 10.000 chunks = 10.000    │
+│                                 │  llamadas adicionales.                     │
+│                                 │  ✅ Usar enriquecedores solo en            │
+│                                 │  indexaciones incrementales, no en         │
+│                                 │  re-indexaciones masivas. Considerar       │
+│                                 │  modelos pequeños y baratos para           │
+│                                 │  enriquecer metadata.                      │
+└─────────────────────────────────┴────────────────────────────────────────────┘
+```
+
+---
+
 > **[← Vector Store](08_vector_store.md)** | **[← Inicio](../README.md)** | **[Siguiente: Tools →](10_tools.md)**

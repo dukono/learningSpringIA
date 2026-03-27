@@ -730,4 +730,52 @@ public class AiConfig {
 
 ---
 
+## 2.14 Errores comunes de configuración y setup
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES EN SETUP Y CONFIGURACIÓN                                 │
+├─────────────────────────────────┬────────────────────────────────────────────┤
+│  Error                          │  Causa y solución                          │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  NoSuchBeanDefinitionException  │  Falta el starter del proveedor en         │
+│  al arrancar la aplicación      │  pom.xml (ej. spring-ai-openai-spring-     │
+│                                 │  boot-starter). Sin él, Spring AI no       │
+│                                 │  auto-configura ChatModel ni ChatClient.   │
+│                                 │  ✅ Añadir la dependencia del proveedor    │
+│                                 │  y asegurarse de que el BOM esté en        │
+│                                 │  <dependencyManagement>.                   │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Connection refused al arrancar │  Ollama no está ejecutándose. Spring AI    │
+│  con perfil dev (Ollama)        │  intenta conectar a localhost:11434 al     │
+│                                 │  arrancar y falla antes de recibir         │
+│                                 │  peticiones.                               │
+│                                 │  ✅ Ejecutar `ollama serve` antes de       │
+│                                 │  arrancar la app. Verificar con            │
+│                                 │  `curl http://localhost:11434`.            │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  API key hardcodeada en         │  api-key: sk-xxxxx en application.yml      │
+│  application.yml commiteada     │  sube la clave a git. Cualquier persona    │
+│                                 │  con acceso al repo puede usarla.          │
+│                                 │  ✅ Usar siempre variables de entorno:     │
+│                                 │  api-key: ${OPENAI_API_KEY}                │
+│                                 │  Añadir application-prod.yml a .gitignore. │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Conflicto de versiones de      │  Añadir dependencias spring-ai sin usar    │
+│  dependencias Spring AI         │  el BOM → versiones incompatibles entre    │
+│                                 │  módulos.                                  │
+│                                 │  ✅ Declarar spring-ai-bom en              │
+│                                 │  <dependencyManagement> y omitir           │
+│                                 │  <version> en cada artefacto spring-ai.    │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Modelo de Ollama no encontrado │  El modelo en spring.ai.ollama.chat.model  │
+│  → error en la primera petición │  no está descargado en la máquina local.   │
+│                                 │  ✅ Ejecutar `ollama pull llama3.2` antes  │
+│                                 │  de arrancar. Listar modelos con           │
+│                                 │  `ollama list`.                            │
+└─────────────────────────────────┴────────────────────────────────────────────┘
+```
+
+---
+
 > **[← Introducción](01_introduccion.md)** | **[← Inicio](../README.md)** | **[Siguiente: ChatClient →](03_chatclient.md)**

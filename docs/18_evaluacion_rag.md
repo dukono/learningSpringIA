@@ -1,5 +1,5 @@
 <!-- navegación -->
-> **[← Testing](17_testing.md)** | **[← Inicio](../README.md)**
+> **[← Testing](17_testing.md)** | **[← Inicio](../README.md)** | **[Siguiente: Proyecto completo →](15_proyecto_completo.md)**
 
 ---
 
@@ -351,5 +351,5 @@ class RagQualityTest {
 
 ---
 
-> **[← Testing](17_testing.md)** | **[← Inicio](../README.md)**
+> **[← Testing](17_testing.md)** | **[← Inicio](../README.md)** | **[Siguiente: Proyecto completo →](15_proyecto_completo.md)**
 

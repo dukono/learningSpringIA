@@ -137,6 +137,32 @@ record WeatherInfo(double temperatura, String condicion, String ciudad) {}
 record ProductInfo(Long id, String nombre, double precio, int stock) {}
 ```
 
+> 💡 **`@ToolParam` — atributo `required`**
+>
+> Por defecto todos los parámetros son `required = true`. Usa `required = false`
+> para parámetros opcionales: el modelo puede omitirlos si el usuario no los especifica.
+>
+> ```java
+> @Tool(description = "Busca vuelos entre dos ciudades con filtros opcionales.")
+> public List<Vuelo> buscarVuelos(
+>     @ToolParam(description = "Ciudad de origen, ej: Madrid")
+>     String origen,                          // required = true por defecto
+>     @ToolParam(description = "Ciudad de destino, ej: París")
+>     String destino,                         // required = true por defecto
+>     @ToolParam(description = "Clase del vuelo: ECONOMY, BUSINESS, FIRST. " +
+>                              "Si no se indica, devuelve todas las clases.",
+>                required = false)
+>     String clase                            // ← el modelo puede omitirlo
+> ) {
+>     // si clase es null → buscar en todas las clases
+> }
+> ```
+>
+> El atributo `required` afecta al JSON Schema que Spring AI envía al modelo.
+> Con `required = false` el parámetro se marca como opcional en el schema,
+> y el modelo entiende que puede no incluirlo en la llamada.
+```
+
 ```java
 // 2. Registrar los tools en el ChatClient
 @Configuration
@@ -572,6 +598,59 @@ resilience4j:
         failure-rate-threshold: 50        # abre el circuito si falla >50%
         wait-duration-in-open-state: 30s  # espera 30s antes de volver a intentar
         sliding-window-size: 10           # evalúa las últimas 10 peticiones
+```
+
+---
+
+## 10.7 Errores comunes con Tools
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES CON TOOLS / FUNCTION CALLING                             │
+├─────────────────────────────────┬────────────────────────────────────────────┤
+│  Error                          │  Causa y solución                          │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  El modelo no llama el tool     │  La description del @Tool es vaga o no     │
+│  cuando debería                 │  describe bien cuándo usarlo. El modelo    │
+│                                 │  decide basándose en la descripción.       │
+│                                 │  ✅ Usar descripciones precisas: "Obtiene  │
+│                                 │  el precio actual de una acción por su     │
+│                                 │  ticker (ej. AAPL, MSFT)."                │
+│                                 │  ❌ "Tool para acciones."                  │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  El tool se ejecuta dos veces   │  Registrado en .defaultTools() del builder │
+│  por petición                   │  Y también en .tools() de la petición.    │
+│                                 │  Se añade dos veces a la lista de tools   │
+│                                 │  enviada al modelo.                        │
+│                                 │  ✅ Los tools globales van en              │
+│                                 │  defaultTools(). Los específicos de        │
+│                                 │  contexto van en .tools() de la petición. │
+│                                 │  Nunca los dos a la vez para el mismo tool.│
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Tool ejecuta operaciones       │  El modelo llama al tool sin verificación  │
+│  destructivas sin confirmación  │  de autorización. Puede borrar datos,      │
+│  del usuario                    │  enviar correos o hacer pagos de forma     │
+│                                 │  inesperada.                               │
+│                                 │  ✅ Validar ownership: userId desde        │
+│                                 │  ToolContext (no del parámetro del tool).  │
+│                                 │  Para acciones irreversibles, añadir       │
+│                                 │  confirmación explícita del usuario.       │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  NullPointerException dentro    │  El modelo puede llamar un tool con un     │
+│  del tool con parámetros        │  parámetro null si no está marcado como    │
+│  inesperados                    │  obligatorio o si la descripción es        │
+│                                 │  ambigua.                                  │
+│                                 │  ✅ Validar parámetros al inicio del tool: │
+│                                 │  if (param == null || param.isBlank())     │
+│                                 │      throw new IllegalArgumentException(); │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Tool con @Autowired no recibe  │  El bean del tool se instancia con new     │
+│  las dependencias de Spring     │  en lugar de ser inyectado por Spring.     │
+│                                 │  ✅ Declarar la clase con @Component y     │
+│                                 │  pasarla al ChatClient como bean           │
+│                                 │  inyectado: .tools(miBean)                 │
+│                                 │  No usar new MiToolClass() directamente.   │
+└─────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
 ---

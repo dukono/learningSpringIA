@@ -140,7 +140,7 @@ class ResumenServiceTest {
         // MockChatModel que lanza excepción (simula error 429 / timeout)
         ChatModel modelConError = mock(ChatModel.class);
         when(modelConError.call(any(Prompt.class)))
-            .thenThrow(new TransientAiException("Rate limit exceeded"));
+            .thenThrow(new RateLimitException("Rate limit exceeded"));  // subclase concreta de TransientAiException
 
         ChatClient.Builder builder = ChatClient.builder(modelConError);
         ResumenService service = new ResumenService(builder);
@@ -175,8 +175,8 @@ public class TestAiConfig {
     @Bean
     @Primary
     public EmbeddingModel mockEmbeddingModel() {
-        // MockEmbeddingModel genera vectores aleatorios de la dimensión indicada
-        return new MockEmbeddingModel(1536);
+        // MockEmbeddingModel genera vectores aleatorios (dimensión no configurable via constructor)
+        return new MockEmbeddingModel();
     }
 }
 ```

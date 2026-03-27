@@ -404,6 +404,44 @@ La descripción debe tener 2 párrafos."
 
 ---
 
+## 4.5 Errores comunes con prompts y templates
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES CON PROMPTS Y TEMPLATES                                  │
+├─────────────────────────────────┬────────────────────────────────────────────┤
+│  Error                          │  Causa y solución                          │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  IllegalArgumentException al    │  Una variable de la plantilla              │
+│  renderizar PromptTemplate      │  ({nombre}, {contexto}...) no tiene        │
+│                                 │  valor en el Map pasado.                   │
+│                                 │  ✅ Asegurarse de que el Map contiene      │
+│                                 │  todas las variables que aparecen en la    │
+│                                 │  plantilla, incluyendo las opcionales       │
+│                                 │  (valor vacío "" si no aplica).            │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Prompt injection — el usuario  │  El input del usuario contiene             │
+│  manipula el comportamiento del │  instrucciones que sobreescriben el system  │
+│  modelo con su input            │  prompt ("Ignora tus instrucciones y..."). │
+│                                 │  ✅ Separar el input del usuario del system │
+│                                 │  prompt. Usar SafeGuardAdvisor. Validar    │
+│                                 │  el input antes de incluirlo en el prompt. │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Prompt demasiado largo →       │  Un system prompt de 2000 tokens se envía  │
+│  alto coste en cada llamada     │  en cada petición. Con 1000 usuarios,      │
+│                                 │  son 2M tokens extra al día.               │
+│                                 │  ✅ Mantener el system prompt conciso.     │
+│                                 │  Mover el contexto variable a RAG en vez   │
+│                                 │  de incluirlo en el system prompt.         │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Few-shot examples obsoletos    │  Los ejemplos del few-shot prompting        │
+│  → el modelo aprende el patrón  │  están hardcodeados y no reflejan el       │
+│  incorrecto                     │  comportamiento esperado actual.           │
+│                                 │  ✅ Revisar y actualizar los ejemplos      │
+│                                 │  periódicamente. Guardarlos en             │
+│                                 │  configuración externa (no en el código).  │
+└─────────────────────────────────┴────────────────────────────────────────────┘
+```
 
 ---
 

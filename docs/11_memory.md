@@ -248,7 +248,7 @@ public class ChatMemoryConfig {
     @Bean
     @Profile("prod")
     public ChatMemory jdbcChatMemory(JdbcTemplate jdbcTemplate) {
-        return new JdbcChatMemory(jdbcTemplate);
+        return JdbcChatMemory.builder().jdbcTemplate(jdbcTemplate).build();
     }
 }
 ```
@@ -298,8 +298,6 @@ public class ChatService {
 ├────────────────────────┬─────────────────────────────────────────────────────┤
 │  InMemoryChatMemory    │  Tests, demos locales. Pierde todo al reiniciar.    │
 │  JdbcChatMemory        │  Producción. Requiere tabla en BD. Persistente.     │
-│  CassandraChatMemory   │  Alta escala. Requiere Apache Cassandra.            │
-│  RedisChatMemory       │  Baja latencia. Requiere Redis. TTL configurable.   │
 └────────────────────────┴─────────────────────────────────────────────────────┘
 
 Regla: siempre configura conversationHistoryWindowSize para controlar el coste.

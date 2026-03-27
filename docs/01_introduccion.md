@@ -277,6 +277,40 @@ Spring AI soporta múltiples proveedores con el mismo código:
 
 ---
 
+## 5. Errores comunes al empezar con Spring AI
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ERRORES FRECUENTES EN LOS PRIMEROS PASOS                                    │
+├─────────────────────────────────┬────────────────────────────────────────────┤
+│  Error                          │  Causa y solución                          │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Usar ChatModel para embeddings │  ChatModel genera texto. EmbeddingModel    │
+│  o viceversa                    │  convierte texto en vectores. Son APIs      │
+│                                 │  distintas para propósitos distintos.       │
+│                                 │  ✅ ChatModel → .call() → texto            │
+│                                 │  ✅ EmbeddingModel → .embed() → float[]   │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Enviar documentos enteros al   │  Un PDF de 50 páginas tiene ~40.000        │
+│  modelo sin RAG                 │  tokens. Supera el context window y cuesta │
+│                                 │  mucho. El modelo además puede "perderse"   │
+│                                 │  en documentos muy largos.                 │
+│                                 │  ✅ Usar RAG: indexar en VectorStore y     │
+│                                 │  recuperar solo los chunks relevantes.     │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Temperature alta en producción │  temperature=1.0 genera respuestas         │
+│  → respuestas inestables        │  creativas pero inconsistentes entre       │
+│                                 │  peticiones idénticas.                     │
+│                                 │  ✅ Para uso empresarial: temperature=0.0  │
+│                                 │  a 0.3 para resultados deterministas.      │
+├─────────────────────────────────┼────────────────────────────────────────────┤
+│  Confundir tokens con palabras  │  1 token ≈ 0.75 palabras en inglés        │
+│  al estimar costes              │  (~0.5 en español). Un párrafo de 100      │
+│                                 │  palabras son ~150-200 tokens.             │
+│                                 │  ✅ Monitorizar usage.getTotalTokens()     │
+│                                 │  para calcular el coste real en producción.│
+└─────────────────────────────────┴────────────────────────────────────────────┘
+```
 
 ---
 
